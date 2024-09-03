@@ -81,7 +81,7 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
 
   return (
     <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <img style={{ width: 200, height: 200 }} src="/logo192.png" loading="lazy" />
+      {/* <img style={{ width: 200, height: 200 }} src="/logo192.png" loading="lazy" /> */}
       {/* <img style={{width : 200 , height : 200}} src={"http://localhost:5000/uploads/1719274.jpg"} loading="lazy"  crossOrigin="anonymous" /> */}
       <CardMedia component="img" alt={product.name} height="200" image={`http://localhost:5000/uploads/Screenshot (555).png`} sx={{ objectFit: "contain" }} crossOrigin="anonymous" />
       <CardContent sx={{ flexGrow: 1, overflowY: "auto" }}>
