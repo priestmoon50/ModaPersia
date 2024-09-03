@@ -17,22 +17,33 @@ const userAddressRoutes = require("./routes/userAddressRoutes");
 const stripeRoutes = require("./routes/stripeRoutes");
 const { errorHandler } = require("./middlewares/errorMiddleware");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const path = require("path");
 
 const app = express();
 
 // Setting up CORS
-const corsOptions = {
-  origin: "http://localhost:3000", // Allow requests from this specific origin
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "Accept",
-    "X-Requested-With",
-  ],
-  credentials: true,
-};
-app.use(cors(corsOptions));
+// const corsOptions = {
+//   origin: "http://localhost:3000", // Allow requests from this specific origin
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS" ,],
+//   allowedHeaders: [
+//     "Content-Type",
+//     "Authorization",
+//     "Accept",
+//     "X-Requested-With",
+//   ],
+//   credentials: true,
+// };
+
+// const corsOptions = {
+//   origin: "*", // Allow requests from this specific origin
+//   methods: "*",
+//   allowedHeaders: "*",
+//   credentials: true,
+// };
+
+// app.use(cors(corsOptions));
+
+app.use(cors());
 
 // استفاده از compression برای بهبود عملکرد
 app.use(compression());
@@ -44,19 +55,8 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "https://js.stripe.com/v3"],
-        connectSrc: [
-          "'self'",
-          "http://localhost:3000",
-          "http://localhost:5000",
-          "https://api.stripe.com",
-        ],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "blob:",
-          "http://localhost:3000",
-          "http://localhost:5000/uploads",
-        ],
+        connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5000", "https://api.stripe.com"],
+        imgSrc: ["'self'", "data:", "blob:", "http://localhost:3000", "http://localhost:5000/uploads"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         frameSrc: ["'self'", "https://js.stripe.com"],
         frameAncestors: ["'self'"],
@@ -101,9 +101,7 @@ app.post("/create-payment-intent", async (req, res) => {
     });
   } catch (error) {
     console.error("Stripe error:", error.message);
-    res
-      .status(500)
-      .json({ message: "Payment processing failed, please try again" });
+    res.status(500).json({ message: "Payment processing failed, please try again" });
   }
 });
 
@@ -119,7 +117,7 @@ app.use("/api/favorites", favoriteRoutes);
 app.use("/api/addresses", userAddressRoutes);
 app.use("/api/stripe", stripeRoutes);
 
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // مدیریت مسیرهای نادرست
 app.use("*", (req, res) => {

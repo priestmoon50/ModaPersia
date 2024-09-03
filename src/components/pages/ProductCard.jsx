@@ -1,20 +1,9 @@
 import React, { useReducer, useEffect, useMemo } from "react";
-import {
-  Card,
-  CardContent,
-  Typography,
-  CardMedia,
-  Button,
-  Box,
-  FormControl,
-  Grid,
-  Select,
-  MenuItem,
-  Radio,
-} from "@mui/material";
+import { Card, CardContent, Typography, CardMedia, Button, Box, FormControl, Grid, Select, MenuItem, Radio } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import AddToFavoritesButton from "./AddToFavoritesButton";
+import { SERVER_IMAGE_PRE_URL } from "../../services/productService";
 
 const ACTIONS = {
   SET_SIZE: "set-size",
@@ -45,11 +34,9 @@ const initialState = {
   mainImage: "",
 };
 
-const normalizeImagePath = (imagePath) => {
-  if (imagePath.startsWith("/uploads/")) {
-    return `http://localhost:5000${imagePath}`;
-  }
-  return `http://localhost:5000/uploads/${imagePath}`;
+const normalizeImagePath = (iamge) => {
+  if (iamge.startsWith("/uploads/")) return `${SERVER_IMAGE_PRE_URL}${iamge}`;
+  return `${SERVER_IMAGE_PRE_URL}/uploads/${iamge}`;
 };
 
 const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
@@ -94,21 +81,15 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
 
   return (
     <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <CardMedia
-        component="img"
-        alt={product.name}
-        height="200"
-        image={state.mainImage}
-        sx={{ objectFit: "contain" }}
-      />
+      <img style={{ width: 200, height: 200 }} src="/logo192.png" loading="lazy" />
+      {/* <img style={{width : 200 , height : 200}} src={"http://localhost:5000/uploads/1719274.jpg"} loading="lazy"  crossOrigin="anonymous" /> */}
+      <CardMedia component="img" alt={product.name} height="200" image={`http://localhost:5000/uploads/Screenshot (555).png`} sx={{ objectFit: "contain" }} crossOrigin="anonymous" />
       <CardContent sx={{ flexGrow: 1, overflowY: "auto" }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography gutterBottom variant="h5" component="div">
             {product.name}
           </Typography>
-          {userInfo && !userInfo.isAdmin && (
-            <AddToFavoritesButton productId={product._id} />
-          )}
+          {userInfo && !userInfo.isAdmin && <AddToFavoritesButton productId={product._id} />}
         </Box>
 
         <Typography
@@ -191,8 +172,7 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
                           height: 24,
                           borderRadius: "50%",
                           marginRight: 1,
-                          border:
-                            field.value === color ? "2px solid black" : "none",
+                          border: field.value === color ? "2px solid black" : "none",
                         }}
                         inputProps={{ "aria-label": color }}
                       />
@@ -217,10 +197,7 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
                   image={image}
                   sx={{
                     objectFit: "contain",
-                    border:
-                      state.selectedColor === colors[index]
-                        ? "2px solid black"
-                        : "none",
+                    border: state.selectedColor === colors[index] ? "2px solid black" : "none",
                   }}
                   onClick={() => {
                     dispatch({
@@ -244,35 +221,18 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
               >
                 Edit
               </Button>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={() => handleDelete(product._id)}
-                sx={{ ml: 2 }}
-              >
+              <Button variant="contained" color="error" onClick={() => handleDelete(product._id)} sx={{ ml: 2 }}>
                 Delete
               </Button>
             </Box>
           )}
 
-          <Button
-            variant="contained"
-            color="primary"
-            type="submit"
-            sx={{ mt: 2 }}
-            disabled={!state.selectedSize || !state.selectedColor}
-          >
+          <Button variant="contained" color="primary" type="submit" sx={{ mt: 2 }} disabled={!state.selectedSize || !state.selectedColor}>
             Add to Cart
           </Button>
         </form>
 
-        <Button
-          variant="outlined"
-          color="secondary"
-          component={Link}
-          to={`/product/${product._id}`}
-          sx={{ mt: 2 }}
-        >
+        <Button variant="outlined" color="secondary" component={Link} to={`/product/${product._id}`} sx={{ mt: 2 }}>
           View Details
         </Button>
       </CardContent>

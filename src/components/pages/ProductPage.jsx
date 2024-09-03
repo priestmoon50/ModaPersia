@@ -1,22 +1,5 @@
 import React, { useContext, useEffect, useState, useCallback } from "react";
-import {
-  Grid,
-  Container,
-  Box,
-  Button,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Snackbar,
-  Alert,
-  TextField,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-} from "@mui/material";
+import { Grid, Container, Box, Button, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, TextField, Select, MenuItem, InputLabel, FormControl } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { UserContext } from "../store/UserContext";
@@ -25,13 +8,7 @@ import ProductCard from "./ProductCard";
 
 const ProductPage = () => {
   const { state: userContextState } = useContext(UserContext);
-  const {
-    state: productContextState,
-    fetchProducts,
-    updateProduct,
-    deleteProduct,
-    addProduct,
-  } = useContext(ProductContext);
+  const { state: productContextState, fetchProducts, updateProduct, deleteProduct, addProduct } = useContext(ProductContext);
 
   const { userInfo } = userContextState?.userLogin || {};
   const { products = [], loading, error } = productContextState.productList || {};
@@ -105,10 +82,7 @@ const ProductPage = () => {
         }
         handleClose();
       } catch (error) {
-        handleSnackbarOpen(
-          editingProduct ? "Failed to update product" : "Failed to add product",
-          "error"
-        );
+        handleSnackbarOpen(editingProduct ? "Failed to update product" : "Failed to add product", "error");
       } finally {
         setLoadingSave(false);
       }
@@ -155,11 +129,7 @@ const ProductPage = () => {
       </Typography>
       {userInfo && userInfo.isAdmin && (
         <Box sx={{ mb: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleAddNewProduct}
-          >
+          <Button variant="contained" color="primary" onClick={handleAddNewProduct}>
             Add New Product
           </Button>
         </Box>
@@ -167,73 +137,20 @@ const ProductPage = () => {
       <Grid container spacing={4}>
         {products.map((product, index) => (
           <Grid item key={`${product._id}-${index}`} xs={12} sm={6} md={4} lg={3}>
-            <ProductCard
-              product={product}
-              handleEdit={handleEdit}
-              handleDelete={handleDelete}
-              handleAddToCart={handleAddToCart}
-              userInfo={userInfo}
-            />
+            <ProductCard product={product} handleEdit={handleEdit} handleDelete={handleDelete} handleAddToCart={handleAddToCart} userInfo={userInfo} />
           </Grid>
         ))}
       </Grid>
 
       {open && (
         <Dialog open={open} onClose={handleClose}>
-          <DialogTitle>
-            {editingProduct ? "Edit Product" : "Add Product"}
-          </DialogTitle>
+          <DialogTitle>{editingProduct ? "Edit Product" : "Add Product"}</DialogTitle>
           <DialogContent>
             <form onSubmit={handleSubmit(handleSave)}>
-              <Controller
-                name="name"
-                control={control}
-                defaultValue=""
-                render={({ field }) => (
-                  <TextField {...field} label="Name" fullWidth margin="dense" />
-                )}
-              />
-              <Controller
-                name="description"
-                control={control}
-                defaultValue=""
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Description"
-                    fullWidth
-                    margin="dense"
-                  />
-                )}
-              />
-              <Controller
-                name="price"
-                control={control}
-                defaultValue={0}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Price"
-                    type="number"
-                    fullWidth
-                    margin="dense"
-                  />
-                )}
-              />
-              <Controller
-                name="discountPercentage"
-                control={control}
-                defaultValue={0}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Discount Percentage"
-                    type="number"
-                    fullWidth
-                    margin="dense"
-                  />
-                )}
-              />
+              <Controller name="name" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="Name" fullWidth margin="dense" />} />
+              <Controller name="description" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="Description" fullWidth margin="dense" />} />
+              <Controller name="price" control={control} defaultValue={0} render={({ field }) => <TextField {...field} label="Price" type="number" fullWidth margin="dense" />} />
+              <Controller name="discountPercentage" control={control} defaultValue={0} render={({ field }) => <TextField {...field} label="Discount Percentage" type="number" fullWidth margin="dense" />} />
 
               <Controller
                 name="sizes"
@@ -277,20 +194,7 @@ const ProductPage = () => {
                 )}
               />
 
-              <Controller
-                name="images"
-                control={control}
-                defaultValue={[]}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    type="file"
-                    inputProps={{ multiple: true }}
-                    fullWidth
-                    margin="dense"
-                  />
-                )}
-              />
+              <Controller name="images" control={control} defaultValue={[]} render={({ field }) => <TextField {...field} type="file" inputProps={{ multiple: true }} fullWidth margin="dense" />} />
 
               <DialogActions>
                 <Button onClick={handleClose} color="primary">
@@ -304,11 +208,7 @@ const ProductPage = () => {
           </DialogContent>
         </Dialog>
       )}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-      >
+      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
         <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
           {snackbarMessage}
         </Alert>
@@ -318,4 +218,3 @@ const ProductPage = () => {
 };
 
 export default ProductPage;
- 
