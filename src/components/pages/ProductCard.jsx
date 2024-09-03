@@ -34,9 +34,9 @@ const initialState = {
   mainImage: "",
 };
 
-const normalizeImagePath = (iamge) => {
-  if (iamge.startsWith("/uploads/")) return `${SERVER_URL}${iamge}`;
-  return `${SERVER_URL}/uploads/${iamge}`;
+const normalizeImagePath = (image) => {
+  if (image.startsWith("/uploads/")) return `${SERVER_URL}${image}`;
+  return `${SERVER_URL}/uploads/${image}`;
 };
 
 const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
@@ -83,7 +83,7 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
     <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* <img style={{ width: 200, height: 200 }} src="/logo192.png" loading="lazy" /> */}
       {/* <img style={{width : 200 , height : 200}} src={"http://localhost:5000/uploads/1719274.jpg"} loading="lazy"  crossOrigin="anonymous" /> */}
-      <CardMedia component="img" alt={product.name} height="200" image={`http://localhost:5000/uploads/Screenshot (555).png`} sx={{ objectFit: "contain" }} crossOrigin="anonymous" />
+      <CardMedia component="img" alt={product.name} height="200" image={state.mainImage || "http://localhost:5000/path/to/placeholder.jpg"}  sx={{ objectFit: "contain" }} crossOrigin="anonymous" />
       <CardContent sx={{ flexGrow: 1, overflowY: "auto" }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography gutterBottom variant="h5" component="div">
