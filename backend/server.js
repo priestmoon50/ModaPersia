@@ -22,28 +22,19 @@ const path = require("path");
 const app = express();
 
 // Setting up CORS
-// const corsOptions = {
-//   origin: "http://localhost:3000", // Allow requests from this specific origin
-//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS" ,],
-//   allowedHeaders: [
-//     "Content-Type",
-//     "Authorization",
-//     "Accept",
-//     "X-Requested-With",
-//   ],
-//   credentials: true,
-// };
+const corsOptions = {
+  origin: "http://localhost:3000", // Allow requests from this specific origin
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS" ,],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "X-Requested-With",
+  ],
+  credentials: true,
+};
 
-// const corsOptions = {
-//   origin: "*", // Allow requests from this specific origin
-//   methods: "*",
-//   allowedHeaders: "*",
-//   credentials: true,
-// };
-
-// app.use(cors(corsOptions));
-
-app.use(cors());
+app.use(cors(corsOptions));
 
 // استفاده از compression برای بهبود عملکرد
 app.use(compression());

@@ -3,7 +3,7 @@ import { Card, CardContent, Typography, CardMedia, Button, Box, FormControl, Gri
 import { useForm, Controller } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import AddToFavoritesButton from "./AddToFavoritesButton";
-import { SERVER_IMAGE_PRE_URL } from "../../services/productService";
+import { SERVER_URL } from "../../services/productService";
 
 const ACTIONS = {
   SET_SIZE: "set-size",
@@ -35,8 +35,8 @@ const initialState = {
 };
 
 const normalizeImagePath = (iamge) => {
-  if (iamge.startsWith("/uploads/")) return `${SERVER_IMAGE_PRE_URL}${iamge}`;
-  return `${SERVER_IMAGE_PRE_URL}/uploads/${iamge}`;
+  if (iamge.startsWith("/uploads/")) return `${SERVER_URL}${iamge}`;
+  return `${SERVER_URL}/uploads/${iamge}`;
 };
 
 const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {

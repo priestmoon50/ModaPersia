@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-const API_URL = '/api/products';
-export const SERVER_IMAGE_PRE_URL = "http://localhost:5000"
+export const SERVER_URL = "http://localhost:5000";
+
+const API_URL = `${SERVER_URL}/api/products`;
+
 
 const productService = {
   // تابع برای ایجاد محصول جدید
