@@ -1,5 +1,17 @@
 import React, { useReducer, useEffect, useMemo } from "react";
-import { Card, CardContent, Typography, CardMedia, Button, Box, FormControl, Grid, Select, MenuItem, Radio } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  Typography,
+  CardMedia,
+  Button,
+  Box,
+  FormControl,
+  Grid,
+  Select,
+  MenuItem,
+  Radio,
+} from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import AddToFavoritesButton from "./AddToFavoritesButton";
@@ -45,8 +57,10 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
   const { control, handleSubmit } = useForm();
 
   const sizes = product.sizes || [];
-  const colors = useMemo(() => product.colors || [], [product.colors]); // استفاده از useMemo
-  const images = useMemo(() => product.images.map(normalizeImagePath) || [], [product.images]); // استفاده از useMemo
+  const colors = useMemo(() => product.colors || [], [product.colors]);
+  const images = useMemo(() => product.images.map(normalizeImagePath) || [], [
+    product.images,
+  ]);
 
   useEffect(() => {
     if (colors.length > 0) {
@@ -63,6 +77,7 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
   const onSubmit = (data) => {
     handleAddToCart({
       id: product._id,
+      name: product.name, // اضافه کردن نام محصول
       size: data.selectedSize,
       color: state.selectedColor,
       price: product.discountPrice || product.price,
@@ -80,21 +95,43 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
   const finalPrice = product.discountPrice || product.price;
 
   return (
-    <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* <img style={{ width: 200, height: 200 }} src="/logo192.png" loading="lazy" /> */}
-      {/* <img style={{width : 200 , height : 200}} src={"http://localhost:5000/uploads/1719274.jpg"} loading="lazy"  crossOrigin="anonymous" /> */}
-      <CardMedia component="img" alt={product.name} height="200" image={state.mainImage || "http://localhost:5000/path/to/placeholder.jpg"}  sx={{ objectFit: "contain" }} crossOrigin="anonymous" />
-      <CardContent sx={{ flexGrow: 1, overflowY: "auto" }}>
+    <Card
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        border: "2px solid #f8bbd0",
+        borderRadius: "15px",
+        boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+      }}
+    >
+      <CardMedia
+        component="img"
+        alt={product.name}
+        height="200"
+        // image={state.mainImage || "http://localhost:5000/path/to/placeholder.jpg"} موقطا کامنت بمونه
+        image={state.mainImage}
+        sx={{ objectFit: "contain", borderRadius: "15px 15px 0 0" }}
+        crossOrigin="anonymous"
+      />
+      <CardContent sx={{ flexGrow: 1, overflowY: "auto", padding: "16px" }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography gutterBottom variant="h5" component="div">
+          <Typography gutterBottom variant="h5" component="div" color="#d81b60">
             {product.name}
           </Typography>
-          {userInfo && !userInfo.isAdmin && <AddToFavoritesButton productId={product._id} />}
+          {userInfo && !userInfo.isAdmin && (
+            <AddToFavoritesButton productId={product._id} />
+          )}
         </Box>
+
+        {/* توضیحات محصول */}
+        <Typography variant="body2" color="textSecondary" gutterBottom>
+          {product.description}
+        </Typography>
 
         <Typography
           variant="body2"
-          color="textPrimary"
+          color="#d81b60"
           sx={{
             textDecoration: product.discountPrice ? "line-through" : "none",
           }}
@@ -130,6 +167,7 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
                       payload: e.target.value,
                     });
                   }}
+                  sx={{ marginBottom: "16px", borderColor: "#d81b60" }}
                 >
                   <MenuItem value="" disabled>
                     Select Size
@@ -172,7 +210,10 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
                           height: 24,
                           borderRadius: "50%",
                           marginRight: 1,
-                          border: field.value === color ? "2px solid black" : "none",
+                          border:
+                            field.value === color
+                              ? "2px solid #d81b60"
+                              : "1px solid #d81b60",
                         }}
                         inputProps={{ "aria-label": color }}
                       />
@@ -197,7 +238,12 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
                   image={image}
                   sx={{
                     objectFit: "contain",
-                    border: state.selectedColor === colors[index] ? "2px solid black" : "none",
+                    borderRadius: "8px",
+                    border:
+                      state.selectedColor === colors[index]
+                        ? "2px solid #8c1bd8c1"
+                        : "1px solid #d81b60",
+                    cursor: "pointer",
                   }}
                   onClick={() => {
                     dispatch({
@@ -205,6 +251,7 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
                       payload: image,
                     });
                   }}
+                  crossOrigin="anonymous"
                 />
               </Grid>
             ))}
@@ -221,18 +268,36 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
               >
                 Edit
               </Button>
-              <Button variant="contained" color="error" onClick={() => handleDelete(product._id)} sx={{ ml: 2 }}>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={() => handleDelete(product._id)}
+                sx={{ ml: 2 }}
+              >
                 Delete
               </Button>
             </Box>
           )}
 
-          <Button variant="contained" color="primary" type="submit" sx={{ mt: 2 }} disabled={!state.selectedSize || !state.selectedColor}>
+          <Button
+            variant="contained"
+            color="secondary"
+            type="submit"
+            sx={{ mt: 2, backgroundColor: "#d81b60" }}
+            disabled={!state.selectedSize || !state.selectedColor}
+          >
             Add to Cart
           </Button>
         </form>
 
-        <Button variant="outlined" color="secondary" component={Link} to={`/product/${product._id}`} sx={{ mt: 2 }}>
+        <Button
+          variant="outlined"
+          color="secondary"
+          component={Link}
+          to={`/product/${product._id}`}
+          state={{ product }}
+          sx={{ mt: 2, borderColor: "#d81b60", color: "#d81b60" }}
+        >
           View Details
         </Button>
       </CardContent>
@@ -241,3 +306,5 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
 };
 
 export default ProductCard;
+
+

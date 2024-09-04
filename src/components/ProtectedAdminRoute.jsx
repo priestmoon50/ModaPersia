@@ -1,17 +1,18 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { AdminContext } from './store/AdminContext';  // تغییر از StoreContext به AdminContext
+import { AdminContext } from './store/AdminContext';  
 import { CircularProgress, Box } from '@mui/material';
 
 const ProtectedAdminRoute = ({ children }) => {
-  const { state } = useContext(AdminContext);  // استفاده از AdminContext
-  const adminLogin = state?.adminLogin || {};  // اطمینان از اینکه adminLogin همیشه یک شیء است
-  const { adminInfo } = adminLogin;  // استخراج adminInfo
+  const { state } = useContext(AdminContext); 
+  const adminLogin = state?.adminLogin || {};
+  const { adminInfo } = adminLogin;
 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('adminInfo:', adminInfo); // اضافه کردن لاگ
+    console.log('adminInfo:', adminInfo);
+    // اینجا باید بررسی کنیم که چه زمانی loading باید false شود
     if (adminInfo !== undefined) {
       setLoading(false);
     }
@@ -26,12 +27,12 @@ const ProtectedAdminRoute = ({ children }) => {
   }
 
   // بررسی نقش کاربر و نمایش کامپوننت یا هدایت به صفحه ورود
-  return adminInfo && adminInfo.isAdmin ? (
-    children
-  ) : (
-    <Navigate to="/admin/login" replace />
-  );
+  // بهتر است از یک شرط دقیق‌تر استفاده کنیم
+  if (adminInfo && adminInfo.isAdmin) {
+    return children;
+  } else {
+    return <Navigate to="/admin/login" replace />;
+  }
 };
-
 
 export default ProtectedAdminRoute;

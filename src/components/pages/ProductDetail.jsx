@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState, useCallback } from "react";
+import React, { useReducer, useEffect, useState  , useContext } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { StoreContext } from "../store/StoreContext";
+import { ProductContext } from "../store/ProductContext";
 import {
   Container,
   Typography,
@@ -18,101 +18,123 @@ import {
   Grid,
   Radio,
 } from "@mui/material";
+import { SERVER_URL } from "../../services/productService";
+
+const ACTIONS = {
+  SET_PRODUCT: "set-product",
+  SET_SELECTED_SIZE: "set-selected-size",
+  SET_SELECTED_COLOR: "set-selected-color",
+  SET_MAIN_IMAGE: "set-main-image",
+  SET_ERROR: "set-error",
+};
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case ACTIONS.SET_PRODUCT:
+      return {
+        ...state,
+        product: action.payload.product,
+        mainImage: action.payload.mainImage,
+        selectedColor: action.payload.selectedColor,
+      };
+    case ACTIONS.SET_SELECTED_SIZE:
+      return { ...state, selectedSize: action.payload };
+    case ACTIONS.SET_SELECTED_COLOR:
+      return {
+        ...state,
+        selectedColor: action.payload.color,
+        mainImage: action.payload.imageUrl,
+      };
+    case ACTIONS.SET_MAIN_IMAGE:
+      return { ...state, mainImage: action.payload };
+    case ACTIONS.SET_ERROR:
+      return { ...state, error: action.payload };
+    default:
+      return state;
+  }
+};
+
+const initialState = {
+  product: null,
+  selectedSize: "",
+  selectedColor: "",
+  mainImage: "",
+  error: null,
+};
+
+const normalizeImagePath = (image) => {
+  if (image.startsWith("/uploads/")) return `${SERVER_URL}${image}`;
+  return `${SERVER_URL}/uploads/${image}`;
+};
 
 const ProductDetail = () => {
-  const { state, addCartItem } = useContext(StoreContext);
-  const { products } = state.productList;
+  const { state: productContextState } = useContext(ProductContext);
+  const { products } = productContextState.productList;
   const { id } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedSize, setSelectedSize] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
-  const [mainImage, setMainImage] = useState("");
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' });
-  const [loadingAddToCart, setLoadingAddToCart] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "error",
+  });
 
   useEffect(() => {
-    const fetchProduct = () => {
+    const fetchProduct = async () => {
       try {
         const foundProduct = products.find((product) => product._id === id);
         if (foundProduct) {
-          setProduct(foundProduct);
-          setMainImage(foundProduct.variants[0]?.imageUrl || "DEFAULT_IMAGE_URL");
-          setSelectedColor(foundProduct.variants[0]?.color || "");
+          const normalizedImages = foundProduct.images.map(normalizeImagePath);
+          dispatch({
+            type: ACTIONS.SET_PRODUCT,
+            payload: {
+              product: foundProduct,
+              mainImage: normalizedImages[0] || "DEFAULT_IMAGE_URL",
+              selectedColor: foundProduct.colors[0] || "",
+            },
+          });
         } else {
-          setError("Product not found");
+          dispatch({ type: ACTIONS.SET_ERROR, payload: "Product not found" });
         }
       } catch (error) {
-        setError("Error fetching product");
-      } finally {
-        setLoading(false);
+        dispatch({ type: ACTIONS.SET_ERROR, payload: "Error fetching product" });
       }
     };
 
     fetchProduct();
   }, [id, products]);
 
-  const handleAddToCart = useCallback(async () => {
-    if (product) {
-      setLoadingAddToCart(true);
-      const productDetails = {
-        id: product._id,
-        name: product.name,
-        size: selectedSize,
-        color: selectedColor,
-        price: product.discountPrice || product.price // ارسال قیمت نهایی
-      };
-      
-      try {
-        await addCartItem(productDetails);
-        setSnackbar({ open: true, message: 'Product added to cart', severity: 'success' });
-      } catch (error) {
-        setSnackbar({ open: true, message: 'Failed to add product to cart', severity: 'error' });
-      } finally {
-        setLoadingAddToCart(false);
-      }
-    }
-  }, [product, selectedSize, selectedColor, addCartItem]);
-
   const handleSizeChange = (event) => {
-    setSelectedSize(event.target.value);
+    dispatch({ type: ACTIONS.SET_SELECTED_SIZE, payload: event.target.value });
   };
 
-  const handleColorChange = (color) => {
-    setSelectedColor(color);
-    const selectedVariant = product.variants.find(
-      (variant) => variant.color === color
-    );
-    if (selectedVariant) {
-      setMainImage(selectedVariant.imageUrl);
-    }
+  const handleColorAndImageChange = (color) => {
+    const colorIndex = state.product.colors.indexOf(color);
+    dispatch({
+      type: ACTIONS.SET_SELECTED_COLOR,
+      payload: { color, imageUrl: state.product.images[colorIndex] },
+    });
   };
 
-  const handleSnackbarClose = useCallback(() => {
+  const handleAddToCart = () => {
+    console.log("Adding to cart:", {
+      id: state.product._id,
+      name: state.product.name,
+      size: state.selectedSize,
+      color: state.selectedColor,
+      price: state.product.discountPrice || state.product.price,
+    });
+  };
+
+  const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
-  }, [snackbar]);
+  };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" mt={5}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
+  if (state.error) {
     return (
       <Container maxWidth="md">
-        <Typography
-          color="error"
-          variant="h5"
-          component="h2"
-          align="center"
-          mt={5}
-        >
-          {error}
+        <Typography color="error" variant="h5" component="h2" align="center" mt={5}>
+          {state.error}
         </Typography>
         <Box display="flex" justifyContent="center" mt={2}>
           <Button variant="contained" color="primary" onClick={() => navigate("/products")}>
@@ -123,36 +145,38 @@ const ProductDetail = () => {
     );
   }
 
-  const stock = product.variants.reduce(
-    (acc, variant) => acc + variant.stock,
-    0
-  );
+  if (!state.product) {
+    return (
+      <Box display="flex" justifyContent="center" mt={5}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Container maxWidth="md" sx={{ mt: 5 }}>
       <Card>
         <CardMedia
           component="img"
-          alt={product.name}
+          alt={state.product.name}
           height="400"
-          image={mainImage}
+          image={state.mainImage}
           sx={{ objectFit: "contain" }}
+          crossOrigin="anonymous"  // استفاده از CORS anonymous
         />
         <CardContent>
           <Typography variant="h4" component="h2" gutterBottom>
-            {product.name}
+            {state.product.name}
           </Typography>
-          <Box sx={{ overflowWrap: "break-word", wordWrap: "break-word", hyphens: "auto" }}>
-            <Typography variant="body1" color="textSecondary" paragraph>
-              {product.description}
-            </Typography>
-          </Box>
-          <Typography variant="h5" component="p" sx={{ textDecoration: product.discountPrice ? "line-through" : "none" }}>
-            Price: €{product.price.toFixed(2)}
+          <Typography variant="body1" color="textSecondary" paragraph>
+            {state.product.description}
           </Typography>
-          {product.discountPrice && (
+          <Typography variant="h5" component="p" sx={{ textDecoration: state.product.discountPrice ? "line-through" : "none" }}>
+            Price: €{state.product.price.toFixed(2)}
+          </Typography>
+          {state.product.discountPrice && (
             <Typography variant="h6" component="p" color="primary">
-              Discounted Price: €{product.discountPrice.toFixed(2)}
+              Discounted Price: €{state.product.discountPrice.toFixed(2)}
             </Typography>
           )}
 
@@ -162,7 +186,7 @@ const ProductDetail = () => {
 
           <FormControl fullWidth>
             <Select
-              value={selectedSize}
+              value={state.selectedSize}
               onChange={handleSizeChange}
               displayEmpty
               inputProps={{ "aria-label": "Select size" }}
@@ -170,9 +194,9 @@ const ProductDetail = () => {
               <MenuItem value="" disabled>
                 Select Size
               </MenuItem>
-              {product.variants.map((variant) => (
-                <MenuItem key={variant.size} value={variant.size} disabled={variant.stock === 0}>
-                  {variant.size} {variant.stock === 0 ? "(Out of Stock)" : ""}
+              {state.product.sizes.map((size) => (
+                <MenuItem key={size} value={size}>
+                  {size}
                 </MenuItem>
               ))}
             </Select>
@@ -184,47 +208,46 @@ const ProductDetail = () => {
 
           <FormControl component="fieldset">
             <Box display="flex" flexWrap="wrap">
-              {product.variants.map((variant, index) => (
+              {state.product.colors.map((color, index) => (
                 <Radio
-                  key={`${variant.color}-${index}`}
-                  checked={selectedColor === variant.color}
-                  onChange={() => handleColorChange(variant.color)}
-                  name={variant.color}
+                  key={index}
+                  checked={state.selectedColor === color}
+                  onChange={() => handleColorAndImageChange(color)}
+                  name={color}
                   sx={{
-                    backgroundColor: variant.color,
+                    backgroundColor: color,
                     width: 24,
                     height: 24,
                     borderRadius: "50%",
                     marginRight: 1,
-                    border: selectedColor === variant.color ? "2px solid black" : "none",
+                    border: state.selectedColor === color ? "2px solid black" : "none",
                   }}
                 />
               ))}
             </Box>
           </FormControl>
 
-          <Typography
-            variant="body2"
-            color={stock <= 2 ? "error" : "text.secondary"}
-            mt={2}
-          >
-            {stock <= 2 ? `Only ${stock} left in stock!` : `In Stock: ${stock}`}
-          </Typography>
-
           <Grid container spacing={1} sx={{ mt: 1 }}>
-            {product.variants.map((variant, index) => (
+            {state.product.images.map((image, index) => (
               <Grid item key={`image-${index}`} xs={4}>
                 <CardMedia
                   component="img"
-                  alt={`${product.name} - ${index + 1}`}
+                  alt={`${state.product.name} - ${index + 1}`}
                   height="60"
-                  image={variant.imageUrl || "DEFAULT_IMAGE_URL"} 
+                  image={normalizeImagePath(image) || "DEFAULT_IMAGE_URL"}
                   sx={{
                     objectFit: "contain",
-                    border:
-                      selectedColor === variant.color
-                        ? "2px solid black"
-                        : "none",
+                    borderRadius: "8px",
+                    border: state.selectedColor === state.product.colors[index] ? "2px solid black" : "none",
+                    cursor: "pointer",
+                    
+                  }}
+                  crossOrigin="anonymous"  // استفاده از CORS anonymous
+                  onClick={() => {
+                    dispatch({
+                      type: ACTIONS.SET_MAIN_IMAGE,
+                      payload: normalizeImagePath(image),
+                    });
                   }}
                 />
               </Grid>
@@ -240,23 +263,21 @@ const ProductDetail = () => {
             >
               Back to Products
             </Button>
-            {stock > 0 && (
-              <Button
-                variant="contained"
-                color="secondary"
-                sx={{ ml: 2 }}
-                onClick={handleAddToCart}
-                disabled={!selectedSize || !selectedColor || loadingAddToCart}
-              >
-                {loadingAddToCart ? <CircularProgress size={24} /> : "Add to Cart"}
-              </Button>
-            )}
+            <Button
+              variant="contained"
+              color="secondary"
+              sx={{ ml: 2 }}
+              onClick={handleAddToCart}
+              disabled={!state.selectedSize || !state.selectedColor}
+            >
+              Add to Cart
+            </Button>
           </Box>
         </CardContent>
       </Card>
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={6000} 
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
         onClose={handleSnackbarClose}
       >
         <Alert onClose={handleSnackbarClose} severity={snackbar.severity}>

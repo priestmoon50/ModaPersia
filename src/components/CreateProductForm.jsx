@@ -2,6 +2,17 @@ import React from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
+import {
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+  Grid,
+  Box,
+} from "@mui/material";
 import productService from "../services/productService"; // ایمپورت سرویس
 
 const CreateProductForm = () => {
@@ -57,100 +68,165 @@ const CreateProductForm = () => {
       formData.append("description", data.description);
       formData.append("price", data.price);
       formData.append("discountPercentage", data.discountPercentage);
-  
+
       // تبدیل آرایه‌ها به رشته‌های JSON
       formData.append("sizes", JSON.stringify(data.sizes));
       formData.append("colors", JSON.stringify(data.colors));
-  
+
       if (data.images && data.images.length > 0) {
-        Array.from(data.images).forEach(file => formData.append("images", file));
+        Array.from(data.images).forEach((file) => formData.append("images", file));
       }
-  
+
       // استفاده از سرویس برای ارسال درخواست ایجاد محصول
       const response = await productService.createProduct(formData, userToken);
-      console.log('Product created successfully', response.data);
+      console.log("Product created successfully", response.data);
     } catch (error) {
-      console.error('Error creating product', error);
+      console.error("Error creating product", error);
     }
   };
-  
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div>
-        <label>Product Name</label>
-        <input type="text" {...register("name")} />
-        {errors.name && <p>{errors.name.message}</p>}
-      </div>
+    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ maxWidth: 600, mx: "auto", p: 2 }}>
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Product Name"
+            variant="outlined"
+            {...register("name")}
+            error={!!errors.name}
+            helperText={errors.name?.message}
+          />
+        </Grid>
 
-      <div>
-        <label>Description</label>
-        <textarea {...register("description")} />
-        {errors.description && <p>{errors.description.message}</p>}
-      </div>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Description"
+            variant="outlined"
+            multiline
+            rows={4}
+            {...register("description")}
+            error={!!errors.description}
+            helperText={errors.description?.message}
+          />
+        </Grid>
 
-      <div>
-        <label>Price</label>
-        <input type="number" {...register("price")} />
-        {errors.price && <p>{errors.price.message}</p>}
-      </div>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Price"
+            variant="outlined"
+            type="number"
+            {...register("price")}
+            error={!!errors.price}
+            helperText={errors.price?.message}
+          />
+        </Grid>
 
-      <div>
-        <label>Discount Percentage</label>
-        <input type="number" {...register("discountPercentage")} />
-        {errors.discountPercentage && (
-          <p>{errors.discountPercentage.message}</p>
-        )}
-      </div>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Discount Percentage"
+            variant="outlined"
+            type="number"
+            {...register("discountPercentage")}
+            error={!!errors.discountPercentage}
+            helperText={errors.discountPercentage?.message}
+          />
+        </Grid>
 
-      <div>
-        <label>Sizes</label>
-        <select multiple {...register("sizes")}>
-          <option value="XS">XS</option>
-          <option value="S">S</option>
-          <option value="M">M</option>
-          <option value="L">L</option>
-          <option value="XL">XL</option>
-          <option value="XXL">XXL</option>
-        </select>
-        {errors.sizes && <p>{errors.sizes.message}</p>}
-      </div>
-
-      <div>
-        <label>Colors</label>
-        <select multiple {...register("colors")}>
-          <option value="Red">Red</option>
-          <option value="Blue">Blue</option>
-          <option value="Green">Green</option>
-          <option value="Yellow">Yellow</option>
-          <option value="Black">Black</option>
-          <option value="White">White</option>
-          <option value="Purple">Purple</option>
-          <option value="Orange">Orange</option>
-          <option value="Pink">Pink</option>
-          <option value="Brown">Brown</option>
-        </select>
-        {errors.colors && <p>{errors.colors.message}</p>}
-      </div>
-
-      <div>
-        <label>Images</label>
-        <Controller
-          control={control}
-          name="images"
-          render={({ field }) => (
-            <input
-              type="file"
-              multiple
-              onChange={(e) => field.onChange(e.target.files)}
+        <Grid item xs={12}>
+          <FormControl fullWidth variant="outlined" error={!!errors.sizes}>
+            <InputLabel>Sizes</InputLabel>
+            <Controller
+              name="sizes"
+              control={control}
+              defaultValue={[]}
+              render={({ field }) => (
+                <Select
+                  multiple
+                  value={field.value}
+                  onChange={field.onChange}
+                  label="Sizes"
+                  renderValue={(selected) => selected.join(", ")}
+                >
+                  {["XS", "S", "M", "L", "XL", "XXL"].map((size) => (
+                    <MenuItem key={size} value={size}>
+                      {size}
+                    </MenuItem>
+                  ))}
+                </Select>
+              )}
             />
-          )}
-        />
-        {errors.images && <p>{errors.images.message}</p>}
-      </div>
+            <FormHelperText>{errors.sizes?.message}</FormHelperText>
+          </FormControl>
+        </Grid>
 
-      <button type="submit">Create Product</button>
-    </form>
+        <Grid item xs={12}>
+          <FormControl fullWidth variant="outlined" error={!!errors.colors}>
+            <InputLabel>Colors</InputLabel>
+            <Controller
+              name="colors"
+              control={control}
+              defaultValue={[]}
+              render={({ field }) => (
+                <Select
+                  multiple
+                  value={field.value}
+                  onChange={field.onChange}
+                  label="Colors"
+                  renderValue={(selected) => selected.join(", ")}
+                >
+                  {[
+                    "Red",
+                    "Blue",
+                    "Green",
+                    "Yellow",
+                    "Black",
+                    "White",
+                    "Purple",
+                    "Orange",
+                    "Pink",
+                    "Brown",
+                  ].map((color) => (
+                    <MenuItem key={color} value={color}>
+                      {color}
+                    </MenuItem>
+                  ))}
+                </Select>
+              )}
+            />
+            <FormHelperText>{errors.colors?.message}</FormHelperText>
+          </FormControl>
+        </Grid>
+
+        <Grid item xs={12}>
+          <FormControl fullWidth error={!!errors.images}>
+            <Controller
+              control={control}
+              name="images"
+              render={({ field }) => (
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  type="file"
+                  inputProps={{ multiple: true }}
+                  onChange={(e) => field.onChange(e.target.files)}
+                />
+              )}
+            />
+            <FormHelperText>{errors.images?.message}</FormHelperText>
+          </FormControl>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Button fullWidth variant="contained" color="primary" type="submit">
+            Create Product
+          </Button>
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 

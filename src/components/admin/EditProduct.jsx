@@ -1,235 +1,194 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
 import {
   TextField,
   Button,
-  Container,
-  Typography,
-  Paper,
-  CircularProgress,
-  Grid,
   FormControl,
   InputLabel,
+  FormHelperText,
+  Grid,
+  Box,
+  Typography,
+  CircularProgress,
   Select,
   MenuItem,
-  Snackbar,
-  Alert,
 } from "@mui/material";
+import { useNavigate, useParams } from "react-router-dom";
+import productService from "../../services/productService";
+import { useContext } from "react";
+import { AdminContext } from "../store/AdminContext";
 
 const EditProduct = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState({
-    name: '',
-    description: '',
-    price: '',
-    discountPercentage: '',
-    variants: []
-  });
+  const { state: adminState } = useContext(AdminContext);
+  const { token } = adminState; // فرض اینکه توکن در AdminContext ذخیره شده است
+
   const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState(null);
   const [error, setError] = useState(null);
-  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+
+  const validationSchema = Yup.object().shape({
+    name: Yup.string().required("Product name is required").max(100),
+    description: Yup.string().required("Description is required"),
+    price: Yup.number().required("Price is required").min(0),
+    discountPercentage: Yup.number().min(0).max(100).optional(),
+    sizes: Yup.array()
+      .of(Yup.string().oneOf(["XS", "S", "M", "L", "XL", "XXL"]))
+      .required("At least one size is required"),
+  });
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(validationSchema),
+  });
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5000/api/products/${id}`);
-        setProduct(data);
+        const response = await productService.getProductById(id);
+        setProduct(response.data); // ذخیره داده‌های محصول در state
+        setLoading(false);
+
+        // پر کردن فیلدهای فرم با داده‌های محصول
+        setValue("name", response.data.name);
+        setValue("description", response.data.description);
+        setValue("price", response.data.price);
+        setValue("discountPercentage", response.data.discountPercentage);
+        setValue("sizes", response.data.sizes);
       } catch (error) {
-        setError(error.response?.data?.message || "Error fetching product");
-      } finally {
+        setError("Failed to load product details");
         setLoading(false);
       }
     };
+
     fetchProduct();
-  }, [id]);
+  }, [id, setValue]);
 
-  const handleUpdateProduct = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setError("No token found. Please log in.");
-      return;
-    }
-
-    // ایجاد FormData برای ارسال داده‌ها
-    const formData = new FormData();
-    formData.append('name', product.name);
-    formData.append('description', product.description);
-    formData.append('price', product.price);
-    formData.append('discountPercentage', product.discountPercentage);
-
-    product.variants.forEach((variant, index) => {
-      formData.append(`variants[${index}][color]`, variant.color);
-      formData.append(`variants[${index}][size]`, variant.size);
-      formData.append(`variants[${index}][stock]`, variant.stock);
-      formData.append(`variants[${index}][imageUrl]`, variant.imageUrl); // این خط را در صورتی اضافه کنید که از URL های تصویر استفاده می‌کنید
-    });
-
+  const onSubmit = async (data) => {
     try {
-      await axios.put(
-        `http://localhost:5000/api/products/${id}`,
-        formData, // ارسال فرم داده به جای JSON
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data' // تنظیم هدر برای ارسال فرم داده
-          },
-        }
-      );
-      setNotification({ open: true, message: "Product updated successfully!", severity: "success" });
-      setTimeout(() => {
-        navigate("/admin/products");
-      }, 2000);
-    } catch (error) {
-      setError(error.response?.data?.message || "Error updating product");
-    }
-  };
+      const payload = {
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        discountPercentage: data.discountPercentage || 0,
+        sizes: data.sizes, // ارسال به صورت آرایه
+      };
 
-  const handleVariantChange = (index, key, value) => {
-    const updatedVariants = product.variants.map((variant, i) =>
-      i === index ? { ...variant, [key]: value } : variant
-    );
-    setProduct({ ...product, variants: updatedVariants });
+      await productService.updateProduct(id, payload, token);
+      navigate("/admin/products");
+    } catch (error) {
+      setError("Failed to update product");
+    }
   };
 
   if (loading) {
-    return (
-      <Container>
-        <CircularProgress />
-      </Container>
-    );
+    return <CircularProgress />;
   }
 
   if (error) {
-    return (
-      <Container>
-        <Typography color="error">{error}</Typography>
-      </Container>
-    );
+    return <Typography variant="h5">{error}</Typography>;
   }
 
   return (
-    <Container>
-      <Snackbar 
-        open={notification.open} 
-        autoHideDuration={6000} 
-        onClose={() => setNotification({ ...notification, open: false })}
-      >
-        <Alert severity={notification.severity}>
-          {notification.message}
-        </Alert>
-      </Snackbar>
-
-      <Paper elevation={3} style={{ padding: "20px", marginTop: "20px" }}>
-        <Typography variant="h5" gutterBottom>
-          Edit Product
-        </Typography>
-        <form onSubmit={handleUpdateProduct}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit(onSubmit)}
+      sx={{ maxWidth: 600, mx: "auto", p: 2 }}
+    >
+      <Typography variant="h4" mb={2}>
+        Editing: {product.name} {/* نمایش نام محصول */}
+      </Typography>
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
           <TextField
-            label="Name"
             fullWidth
-            margin="normal"
-            value={product.name}
-            onChange={(e) => setProduct({ ...product, name: e.target.value })}
-            required
+            label="Product Name"
+            variant="outlined"
+            {...register("name")}
+            error={!!errors.name}
+            helperText={errors.name?.message}
           />
+        </Grid>
+
+        <Grid item xs={12}>
           <TextField
+            fullWidth
             label="Description"
-            fullWidth
-            margin="normal"
-            value={product.description}
-            onChange={(e) => setProduct({ ...product, description: e.target.value })}
-            required
+            variant="outlined"
+            multiline
+            rows={4}
+            {...register("description")}
+            error={!!errors.description}
+            helperText={errors.description?.message}
           />
+        </Grid>
+
+        <Grid item xs={12}>
           <TextField
+            fullWidth
             label="Price"
+            variant="outlined"
             type="number"
-            fullWidth
-            margin="normal"
-            value={product.price}
-            onChange={(e) => setProduct({ ...product, price: parseFloat(e.target.value) })}
-            required
+            {...register("price")}
+            error={!!errors.price}
+            helperText={errors.price?.message}
           />
+        </Grid>
 
+        <Grid item xs={12}>
           <TextField
-            label="Discount Percentage"
-            type="number"
             fullWidth
-            margin="normal"
-            value={product.discountPercentage}
-            onChange={(e) => setProduct({ ...product, discountPercentage: parseFloat(e.target.value) })}
+            label="Discount Percentage"
+            variant="outlined"
+            type="number"
+            {...register("discountPercentage")}
+            error={!!errors.discountPercentage}
+            helperText={errors.discountPercentage?.message}
           />
+        </Grid>
 
-          <Typography variant="h6" gutterBottom>
-            Variants
-          </Typography>
+        <Grid item xs={12}>
+          <FormControl fullWidth variant="outlined" error={!!errors.sizes}>
+            <InputLabel>Sizes</InputLabel>
+            <Controller
+              name="sizes"
+              control={control}
+              defaultValue={[]}
+              render={({ field }) => (
+                <Select
+                  multiple
+                  value={field.value}
+                  onChange={field.onChange}
+                  label="Sizes"
+                  renderValue={(selected) => selected.join(", ")}
+                >
+                  {["XS", "S", "M", "L", "XL", "XXL"].map((size) => (
+                    <MenuItem key={size} value={size}>
+                      {size}
+                    </MenuItem>
+                  ))}
+                </Select>
+              )}
+            />
+            <FormHelperText>{errors.sizes?.message}</FormHelperText>
+          </FormControl>
+        </Grid>
 
-          {product.variants.map((variant, index) => (
-            <Paper key={index} elevation={1} style={{ padding: "15px", marginBottom: "15px" }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth margin="normal">
-                    <InputLabel>Color</InputLabel>
-                    <Select
-                      value={variant.color}
-                      onChange={(e) => handleVariantChange(index, 'color', e.target.value)}
-                    >
-                      <MenuItem value="Red">Red</MenuItem>
-                      <MenuItem value="Blue">Blue</MenuItem>
-                      <MenuItem value="Green">Green</MenuItem>
-                      <MenuItem value="Yellow">Yellow</MenuItem>
-                      {/* Add more colors as needed */}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    label="Size"
-                    fullWidth
-                    margin="normal"
-                    value={variant.size}
-                    onChange={(e) => handleVariantChange(index, 'size', e.target.value)}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    label="Stock"
-                    type="number"
-                    fullWidth
-                    margin="normal"
-                    value={variant.stock}
-                    onChange={(e) => handleVariantChange(index, 'stock', parseInt(e.target.value, 10))}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    label="Image URL"
-                    fullWidth
-                    margin="normal"
-                    value={variant.imageUrl}
-                    onChange={(e) => handleVariantChange(index, 'imageUrl', e.target.value)}
-                    required
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
-          ))}
-
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            style={{ marginTop: "10px" }}
-          >
-            Update Product
+        <Grid item xs={12}>
+          <Button fullWidth variant="contained" color="primary" type="submit">
+            Save Changes
           </Button>
-        </form>
-      </Paper>
-    </Container>
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 
