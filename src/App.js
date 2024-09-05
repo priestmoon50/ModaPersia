@@ -20,12 +20,14 @@ import { loadStripe } from "@stripe/stripe-js";
 import OrderTracking from "./components/OrderTracking";
 import AdminRoutes from "./components/admin/AdminRoutes";
 import { StoreProvider } from "./components/store/StoreContext";
+import { CartProvider } from "./components/store/CartContext"; // اضافه کردن CartProvider
 import { ProductProvider } from "./components/store/ProductContext";
 import { UserProvider } from "./components/store/UserContext";
 import { AdminProvider } from "./components/store/AdminContext";  // اضافه کردن AdminProvider
 import Footer from "./components/pages/Footer";
 import FAQ from "./components/pages/FAQ";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+
 
 // تنظیم Stripe با کلید عمومی
 const stripePromise = loadStripe(
@@ -51,6 +53,7 @@ const App = () => {
     <StoreProvider>
       <UserProvider>
         <ProductProvider>
+        <CartProvider> 
           <AdminProvider>  {/* اضافه کردن AdminProvider برای پوشش تمام بخش‌های ادمین */}
             <Router>
               <Navbar />
@@ -100,6 +103,7 @@ const App = () => {
               <Footer />
             </Router>
           </AdminProvider>
+          </CartProvider>
         </ProductProvider>
       </UserProvider>
     </StoreProvider>

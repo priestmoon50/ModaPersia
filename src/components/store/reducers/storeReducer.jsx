@@ -16,19 +16,6 @@ import {
   ORDER_UPDATE_DELIVERED_FAIL,
 } from "../constants/orderConstants";
 
-const getCartItems = () => {
-  const storedCartItems = localStorage.getItem("cartItems");
-  if (!storedCartItems) return [];
-
-  try {
-    return JSON.parse(storedCartItems);
-  } catch (e) {
-    console.error("Error parsing cartItems from localStorage", e);
-    localStorage.removeItem("cartItems"); // پاک کردن داده‌های نامعتبر
-    return [];
-  }
-};
-
 const handleRequestState = (statePart, action, loading = false, success = false, error = null) => ({
   ...statePart,
   loading,
@@ -37,9 +24,6 @@ const handleRequestState = (statePart, action, loading = false, success = false,
 });
 
 const initialState = {
-  cart: {
-    cartItems: getCartItems(),
-  },
   orderList: {
     orders: [],
     loading: false,
@@ -60,49 +44,6 @@ const initialState = {
 
 const storeReducer = (state = initialState, action) => {
   switch (action.type) {
-    // Cart actions
-    case "ADD_TO_CART": {
-      const item = action.payload;
-      const existItem = state.cart.cartItems.find(
-        (x) => x.product === item.product
-      );
-      const cartItems = existItem
-        ? state.cart.cartItems.map((x) =>
-            x.product === existItem.product ? item : x
-          )
-        : [...state.cart.cartItems, item];
-      localStorage.setItem("cartItems", JSON.stringify(cartItems));
-      return {
-        ...state,
-        cart: {
-          ...state.cart,
-          cartItems,
-        },
-      };
-    }
-    case "REMOVE_FROM_CART": {
-      const updatedCartItems = state.cart.cartItems.filter(
-        (item) => item.product !== action.payload
-      );
-      localStorage.setItem("cartItems", JSON.stringify(updatedCartItems));
-      return {
-        ...state,
-        cart: {
-          ...state.cart,
-          cartItems: updatedCartItems,
-        },
-      };
-    }
-    case "RESET_CART":
-      localStorage.removeItem("cartItems");
-      return {
-        ...state,
-        cart: {
-          ...state.cart,
-          cartItems: [],
-        },
-      };
-
     // Order actions
     case ORDER_LIST_REQUEST:
     case ORDER_DELETE_REQUEST:

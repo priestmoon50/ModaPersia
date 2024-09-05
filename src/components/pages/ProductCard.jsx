@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useMemo } from "react";
+import React, { useReducer, useEffect, useMemo, useContext } from "react";
 import {
   Card,
   CardContent,
@@ -16,6 +16,8 @@ import { useForm, Controller } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import AddToFavoritesButton from "./AddToFavoritesButton";
 import { SERVER_URL } from "../../services/productService";
+
+import CartContext from "../store/CartContext";
 
 const ACTIONS = {
   SET_SIZE: "set-size",
@@ -51,12 +53,14 @@ const normalizeImagePath = (image) => {
   return `${SERVER_URL}/uploads/${image}`;
 };
 
-const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
+const ProductCard = ({ product, handleDelete, userInfo }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const navigate = useNavigate();
   const { control, handleSubmit } = useForm();
-
-  const sizes = product.sizes || [];
+  const { addCartItem, error, isLoading } = useContext(CartContext);
+  
+  // سایزها و رنگ‌های موجود
+  const sizes = useMemo(() => product.sizes || [], [product.sizes]);
   const colors = useMemo(() => product.colors || [], [product.colors]);
   const images = useMemo(() => product.images.map(normalizeImagePath) || [], [
     product.images,
@@ -72,16 +76,36 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
         },
       });
     }
-  }, [colors, images]);
 
-  const onSubmit = (data) => {
-    handleAddToCart({
-      id: product._id,
-      name: product.name, // اضافه کردن نام محصول
-      size: data.selectedSize,
-      color: state.selectedColor,
-      price: product.discountPrice || product.price,
-    });
+    if (sizes.length > 0) {
+      dispatch({
+        type: ACTIONS.SET_SIZE,
+        payload: sizes[0],
+      });
+    }
+  }, [colors, images, sizes]);
+
+  const onSubmit = async (data) => {
+    if (!state.selectedColor || !data.selectedSize) {
+      console.error("Error: Color or size not selected");
+      return;
+    }
+
+    const cartItem = {
+      productId: String(product._id),
+      name: product.name,            // اضافه کردن نام محصول
+      price: product.price,          // اضافه کردن قیمت محصول
+      quantity: 1,
+      color: state.selectedColor,    // رنگ انتخاب شده
+      size: data.selectedSize,       // سایز انتخاب شده
+    };
+
+    try {
+      await addCartItem(cartItem); // ارسال آیتم به سبد خرید
+      console.log("Product successfully added to cart:", product.name);
+    } catch (err) {
+      console.error("Error adding product to cart:", err);
+    }
   };
 
   const handleColorAndImageChange = (color) => {
@@ -109,7 +133,6 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
         component="img"
         alt={product.name}
         height="200"
-        // image={state.mainImage || "http://localhost:5000/path/to/placeholder.jpg"} موقطا کامنت بمونه
         image={state.mainImage}
         sx={{ objectFit: "contain", borderRadius: "15px 15px 0 0" }}
         crossOrigin="anonymous"
@@ -124,7 +147,6 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
           )}
         </Box>
 
-        {/* توضیحات محصول */}
         <Typography variant="body2" color="textSecondary" gutterBottom>
           {product.description}
         </Typography>
@@ -154,7 +176,7 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
             <Controller
               name="selectedSize"
               control={control}
-              defaultValue={state.selectedSize}
+              defaultValue={state.selectedSize || ""}
               render={({ field }) => (
                 <Select
                   {...field}
@@ -191,7 +213,7 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
               <Controller
                 name="selectedColor"
                 control={control}
-                defaultValue={state.selectedColor}
+                defaultValue={state.selectedColor || ""}
                 render={({ field }) => (
                   <>
                     {colors.map((color, index) => (
@@ -223,10 +245,6 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
               />
             </Box>
           </FormControl>
-
-          <Typography variant="body2" color="text.secondary" mt={2}>
-            Images:
-          </Typography>
 
           <Grid container spacing={1} sx={{ mt: 1 }}>
             {images.map((image, index) => (
@@ -284,9 +302,12 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
             color="secondary"
             type="submit"
             sx={{ mt: 2, backgroundColor: "#d81b60" }}
-            disabled={!state.selectedSize || !state.selectedColor}
+            disabled={!state.selectedSize || !state.selectedColor || isLoading} // جلوگیری از افزودن در حین لودینگ
           >
-            Add to Cart
+            {isLoading ? "Adding to Cart..." : "Add to Cart"}{" "}
+            {/* نمایش وضعیت لودینگ */}
+            {error && <Typography color="error">{error}</Typography>}{" "}
+            {/* نمایش خطا */}
           </Button>
         </form>
 
@@ -306,5 +327,3 @@ const ProductCard = ({ product, handleDelete, handleAddToCart, userInfo }) => {
 };
 
 export default ProductCard;
-
-

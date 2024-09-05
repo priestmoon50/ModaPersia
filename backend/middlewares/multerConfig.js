@@ -7,8 +7,8 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/'); // مسیر ذخیره تصاویر
   },
   filename: (req, file, cb) => {
-    // نام اصلی فایل را حفظ می‌کنیم
-    cb(null, file.originalname);
+    // افزودن Date.now() به نام فایل برای جلوگیری از تکرار نام
+    cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
 
@@ -21,7 +21,7 @@ const fileFilter = (req, file, cb) => {
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb('Error: Images Only!');
+    cb(new Error('Error: Only images are allowed (JPEG, JPG, PNG)'));
   }
 };
 

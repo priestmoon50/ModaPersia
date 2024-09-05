@@ -1,12 +1,8 @@
+// StoreContext.jsx
 import React, { createContext, useReducer, useCallback, useState } from "react";
 import axios from "axios";
 import { storeReducer, initialState } from "./reducers/storeReducer";
-import { addToCart, removeFromCart, resetCart } from "./actions/cartActions";
-import {
-  createOrder,
-  fetchOrderDetails,
-  updateOrderToDeliveredAction,
-} from "./actions/orderActions";
+import { createOrder, fetchOrderDetails, updateOrderToDeliveredAction } from "./actions/orderActions";
 
 const StoreContext = createContext();
 
@@ -19,16 +15,6 @@ const StoreProvider = ({ children }) => {
     const errorMessage = error.response?.data?.message || error.message;
     setError(errorMessage);
   }, []);
-
-  const addCartItem = useCallback((id, qty) => addToCart(id, qty, dispatch), [
-    dispatch,
-  ]);
-
-  const removeCartItem = useCallback((id) => removeFromCart(id, dispatch), [
-    dispatch,
-  ]);
-
-  const resetCartItems = useCallback(() => resetCart(dispatch), [dispatch]);
 
   const listAllOrders = useCallback(async () => {
     try {
@@ -76,9 +62,6 @@ const StoreProvider = ({ children }) => {
     <StoreContext.Provider
       value={{
         state,
-        addCartItem,
-        removeCartItem,
-        resetCartItems,
         listAllOrders,
         createNewOrder,
         fetchOrderDetails: fetchOrderDetailsAction,

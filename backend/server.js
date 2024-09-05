@@ -110,6 +110,7 @@ app.use("/api/stripe", stripeRoutes);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+
 // مدیریت مسیرهای نادرست
 app.use("*", (req, res) => {
   res.status(404).json({ message: "API route not found" });

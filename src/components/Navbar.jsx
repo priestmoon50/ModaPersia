@@ -24,13 +24,14 @@ import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import LanguageSelector from "./LanguageSelector";
 import { useTranslation } from "react-i18next";
-
+import CartContext from "./store/CartContext";
 import { UserContext } from "./store/UserContext"; // Import UserContext
+
 
 const Navbar = () => {
   const { state, logoutUser } = useContext(UserContext); // Use UserContext instead of StoreContext
-  const { cart, userLogin } = state; // گرفتن وضعیت سبد خرید و کاربر
-  const cartItems = cart?.cartItems || [];
+  const { cartCount } = useContext(CartContext); // گرفتن تعداد آیتم‌های سبد خرید از CartContext
+  const { userLogin } = state; // گرفتن وضعیت کاربر
   const user = userLogin?.userInfo;
 
   const { toggleTheme, mode } = useTheme();
@@ -45,12 +46,10 @@ const Navbar = () => {
     console.log("User status changed:", user);
   }, [user]); // وابستگی به user
 
-  // مدیریت باز و بسته شدن Drawer
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
   };
 
-  // مدیریت خروج از حساب کاربری
   const handleLogout = () => {
     logoutUser();
     navigate("/login");
@@ -70,7 +69,6 @@ const Navbar = () => {
     </>
   );
 
-  // لینک‌های مربوط به ورود و خروج کاربر را رندر می‌کند
   const renderAuthLinks = () => (
     <>
       {user ? (
@@ -102,7 +100,6 @@ const Navbar = () => {
     </>
   );
 
-  // محتوای Drawer برای نمایش در حالت موبایل
   const drawerContent = (
     <Box sx={{ width: 250 }}>
       <IconButton onClick={handleDrawerToggle}>
@@ -126,7 +123,8 @@ const Navbar = () => {
           to="/cart"
           onClick={handleDrawerToggle}
         >
-          <Badge badgeContent={cartItems.length} color="secondary">
+          {/* نمایش تعداد آیتم‌های سبد خرید */}
+          <Badge badgeContent={cartCount} color="secondary">
             <ListItemText primary={t("cart")} />
           </Badge>
         </ListItem>
@@ -192,7 +190,8 @@ const Navbar = () => {
               </>
             )}
             <IconButton component={Link} to="/cart" color="inherit">
-              <Badge badgeContent={cartItems.length} color="secondary">
+              {/* نمایش تعداد آیتم‌های سبد خرید */}
+              <Badge badgeContent={cartCount} color="secondary">
                 <ShoppingCartIcon />
               </Badge>
             </IconButton>
