@@ -1,96 +1,102 @@
 import React from "react";
-import { Box, TextField, Typography, List, ListItem, ListItemText } from "@mui/material";
+import { Grid, TextField } from "@mui/material";
+import { Controller } from "react-hook-form";
 
-const CustomerForm = ({ formData, formErrors, handleChange, cartItems, calculateTotal }) => {
+const CustomerForm = ({ control }) => {
   return (
-    <Box>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Customer Information
-      </Typography>
-      <TextField
-        label="Email"
-        name="email"
-        value={formData.email}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        required
-        error={!!formErrors.email}
-        helperText={formErrors.email}
-      />
-      <TextField
-        label="Phone"
-        name="phone"
-        value={formData.phone}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        required
-        error={!!formErrors.phone}
-        helperText={formErrors.phone}
-      />
-      <TextField
-        label="Country"
-        name="country"
-        value={formData.country}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        required
-        error={!!formErrors.country}
-        helperText={formErrors.country}
-      />
-      <TextField
-        label="City"
-        name="city"
-        value={formData.city}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        required
-        error={!!formErrors.city}
-        helperText={formErrors.city}
-      />
-      <TextField
-        label="Address"
-        name="address"
-        value={formData.address}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        required
-        error={!!formErrors.address}
-        helperText={formErrors.address}
-      />
-      <TextField
-        label="Postal Code"
-        name="postalCode"
-        value={formData.postalCode}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-        required
-        error={!!formErrors.postalCode}
-        helperText={formErrors.postalCode}
-      />
-
-      <Typography variant="h6" component="h3" gutterBottom>
-        Order Summary
-      </Typography>
-      <List>
-        {cartItems.map((item) => (
-          <ListItem key={item.product}>
-            <ListItemText
-              primary={item.name}
-              secondary={`Quantity: ${item.qty} - Price: ${item.price}`}
+    <Grid container spacing={0.3}>
+      {/* نام کامل */}
+      <Grid item xs={12}>
+        <Controller
+          name="name"
+          control={control}
+          defaultValue=""
+          rules={{ required: "Full name is required" }}
+          render={({ field, fieldState: { error } }) => (
+            <TextField
+              {...field}
+              label="Full Name"
+              fullWidth
+              error={!!error}
+              helperText={error ? error.message : null}
+              sx={{ mb: 3 }}  // فاصله استاندارد بین فیلدها
             />
-          </ListItem>
-        ))}
-        <ListItem>
-          <ListItemText primary="Total" secondary={`€${calculateTotal()}`} />
-        </ListItem>
-      </List>
-    </Box>
+          )}
+        />
+      </Grid>
+
+      {/* آدرس */}
+      <Grid item xs={12}>
+        <Controller
+          name="address"
+          control={control}
+          defaultValue=""
+          rules={{ required: "Address is required" }}
+          render={({ field, fieldState: { error } }) => (
+            <TextField
+              {...field}
+              label="Address"
+              fullWidth
+              error={!!error}
+              helperText={error ? error.message : null}
+              sx={{ mb: 3 }}
+            />
+          )}
+        />
+      </Grid>
+
+      {/* کد پستی */}
+      <Grid item xs={12} sm={6}>
+        <Controller
+          name="postalCode"
+          control={control}
+          defaultValue=""
+          rules={{
+            required: "Postal code is required",
+            pattern: {
+              value: /^[0-9]{5}$/,
+              message: "Invalid postal code",
+            },
+          }}
+          render={({ field, fieldState: { error } }) => (
+            <TextField
+              {...field}
+              label="Postal Code"
+              fullWidth
+              error={!!error}
+              helperText={error ? error.message : null}
+              sx={{ mb: 3 }}
+            />
+          )}
+        />
+      </Grid>
+
+      {/* شماره تلفن */}
+      <Grid item xs={12} sm={6}>
+        <Controller
+          name="phone"
+          control={control}
+          defaultValue=""
+          rules={{
+            required: "Phone number is required",
+            pattern: {
+              value: /^\+?[1-9]\d{1,14}$/,
+              message: "Invalid phone number",
+            },
+          }}
+          render={({ field, fieldState: { error } }) => (
+            <TextField
+              {...field}
+              label="Phone Number"
+              fullWidth
+              error={!!error}
+              helperText={error ? error.message : null}
+              sx={{ mb: 3 }}
+            />
+          )}
+        />
+      </Grid>
+    </Grid>
   );
 };
 

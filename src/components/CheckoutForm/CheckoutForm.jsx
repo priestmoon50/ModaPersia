@@ -1,158 +1,141 @@
-import React, { useState, useEffect, useContext } from "react";
-import { Container } from "@mui/material";
-import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
-import { StoreContext } from "../store/StoreContext";
+import React, { useContext, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import {
+  Button,
+  Container,
+  Typography,
+  Box,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import CustomerForm from "./CustomerForm";
-import PaymentForm from "./PaymentForm";
-import handlePayPalApprove from "./PaymentForm";
+import CartContext from "../store/CartContext";
+import CustomerForm from "./CustomerForm"; // فرم اطلاعات مشتری
+import PaymentForm from "./PaymentForm"; // فرم اطلاعات پرداخت
 
 const CheckoutForm = () => {
-  const stripe = useStripe();
-  const elements = useElements();
+  const { cartItems, clearCart } = useContext(CartContext); // اضافه کردن clearCart برای پاک‌سازی سبد پس از ثبت سفارش
+  const { handleSubmit, control } = useForm();
   const navigate = useNavigate();
-  const { state, createOrder } = useContext(StoreContext);
-  const { cartItems } = state.cart;
-  const [formData, setFormData] = useState({
-    address: "",
-    city: "",
-    postalCode: "",
-    country: "",
-    phone: "",
-    email: "",
-  });
-  const [paymentMethod, setPaymentMethod] = useState("stripe");
-  const [formErrors, setFormErrors] = useState({});
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+
   const [loading, setLoading] = useState(false);
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const isValid =
-      formData.address &&
-      formData.city &&
-      formData.postalCode &&
-      formData.country &&
-      formData.phone &&
-      paymentMethod;
-    setIsFormValid(isValid);
-  }, [formData, paymentMethod]);
+  // محاسبه جمع کل سبد خرید
+  const calculateTotal = useMemo(() => {
+    return cartItems
+      .reduce((sum, item) => sum + (item.price || 0) * (item.qty || 1), 0)
+      .toFixed(2); // اطمینان از اینکه price و qty وجود دارند
+  }, [cartItems]);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({ ...formErrors, [e.target.name]: "" });
-  };
+  const onSubmit = async (data) => {
+    setLoading(true);
+    setError(null);
 
-  const validateForm = () => {
-    const errors = {};
-    if (!formData.email) {
-      errors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = "Email is invalid";
-    }
-    if (!formData.phone) {
-      errors.phone = "Phone number is required";
-    } else if (!/^\+?[1-9]\d{1,14}$/.test(formData.phone)) {
-      errors.phone = "Phone number is invalid";
-    }
-    if (!formData.country) {
-      errors.country = "Country is required";
-    }
-    if (!formData.city) {
-      errors.city = "City is required";
-    }
-    if (!formData.address) {
-      errors.address = "Address is required";
-    }
-    if (!formData.postalCode) {
-      errors.postalCode = "Postal code is required";
-    }
-    return errors;
-  };
+    try {
+      const orderData = {
+        customer: {
+          name: data.name,
+          address: data.address,
+          postalCode: data.postalCode,
+          phone: data.phone,
+        },
+        payment: {
+          method: data.paymentMethod,
+          ...(data.paymentMethod === "creditCard" && {
+            cardNumber: data.cardNumber,
+            expiryDate: data.expiryDate,
+            cvv: data.cvv,
+          }),
+        },
+        items: cartItems,
+        total: calculateTotal,
+      };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
+      // گرفتن توکن از localStorage
+      const token = localStorage.getItem("authToken");
 
-    if (paymentMethod === "stripe") {
-      if (!stripe || !elements) {
-        console.log("Stripe or Elements not loaded");
-        return;
+      // ارسال اطلاعات سفارش به API با توکن
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`, // اضافه کردن توکن به هدر
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to place order. Please try again.");
       }
 
-      const cardElement = elements.getElement(CardElement);
+      const savedOrder = await response.json();
 
-      try {
-        setLoading(true);
-        const { error, paymentMethod: stripePaymentMethod } = await stripe.createPaymentMethod({
-          type: "card",
-          card: cardElement,
-        });
+      // ذخیره جزئیات سفارش در localStorage
+      localStorage.setItem("orderDetails", JSON.stringify(savedOrder));
 
-        if (error) {
-          console.error("Stripe error: ", error.message);
-          setError(error.message);
-          setLoading(false);
-          return;
-        }
-
-        const orderData = {
-          orderItems: cartItems,
-          shippingAddress: formData,
-          paymentMethod: stripePaymentMethod.id,
-          paymentResult: {
-            id: stripePaymentMethod.id,
-            card: stripePaymentMethod.card,
-            billing_details: stripePaymentMethod.billing_details,
-          },
-          itemsPrice: calculateTotal(),
-          taxPrice: 0,
-          shippingPrice: 0,
-          totalPrice: calculateTotal(),
-        };
-
-        await createOrder(orderData);
-        setSuccess(true);
-        setError(null);
-        setLoading(false);
-        navigate("/order-confirmation");
-      } catch (error) {
-        console.error("Order creation error: ", error.message);
-        setError(error.message);
-        setLoading(false);
-      }
+      // پاک کردن سبد خرید و هدایت به صفحه تایید سفارش
+      clearCart();
+      navigate("/order-confirmation");
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      setError(
+        "An error occurred while processing your order. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const calculateTotal = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.qty, 0).toFixed(2);
   };
 
   return (
-    <Container>
-      <CustomerForm
-        formData={formData}
-        formErrors={formErrors}
-        handleChange={handleChange}
-        cartItems={cartItems}
-        calculateTotal={calculateTotal}
-      />
-      <PaymentForm
-        paymentMethod={paymentMethod}
-        setPaymentMethod={setPaymentMethod}
-        handleSubmit={handleSubmit}
-        isFormValid={isFormValid}
-        loading={loading}
-        error={error}
-        success={success}
-        handlePayPalApprove={handlePayPalApprove}
-        calculateTotal={calculateTotal}
-      />
+    <Container maxWidth="md">
+      <Typography variant="h4" gutterBottom>
+        Checkout
+      </Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)}>
+        {/* فرم اطلاعات مشتری */}
+        <Box sx={{ mb: 3 }}>
+          <CustomerForm control={control} />
+        </Box>
+
+        {/* فرم پرداخت */}
+        <Box sx={{ mb: 3 }}>
+          <PaymentForm control={control} />
+        </Box>
+
+        {/* خلاصه سبد خرید */}
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h6">Order Summary</Typography>
+          {cartItems.map((item, index) => (
+            <Typography key={index}>
+              {item.name} ({item.qty} x €{item.price.toFixed(2)}) = €
+              {(item.qty * item.price).toFixed(2)}
+            </Typography>
+          ))}
+          <Typography variant="h5" mt={2}>
+            Total: €{calculateTotal}
+          </Typography>
+        </Box>
+
+        {/* دکمه نهایی کردن خرید */}
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ mt: 3 }}
+          disabled={loading} // غیر فعال کردن دکمه در زمان لودینگ
+        >
+          {loading ? <CircularProgress size={24} /> : "Place Order"}
+        </Button>
+      </form>
     </Container>
   );
 };

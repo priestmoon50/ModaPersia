@@ -62,8 +62,13 @@ export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
 
   const addCartItem = (item) => {
+    if (!item.productId || !item.name || !item.price) {
+      dispatch({ type: "SET_ERROR", payload: "Invalid product details" });
+      return;
+    }
     dispatch({ type: "ADD_TO_CART", payload: item });
   };
+  
 
   const removeCartItem = (item) => {
     dispatch({ type: "REMOVE_FROM_CART", payload: item });

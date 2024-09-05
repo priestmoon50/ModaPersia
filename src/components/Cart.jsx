@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo } from "react";
+import React, { useContext, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Container,
@@ -12,11 +12,24 @@ import {
 import CartContext from "./store/CartContext";
 
 const Cart = () => {
-  const { cartItems, error, removeCartItem } = useContext(CartContext); // destructuring مستقیم
+  const { cartItems, removeCartItem, error } = useContext(CartContext);
 
-  // Handles removing item from cart
+  // محاسبه قیمت برای هر آیتم
+  const calculatePrice = (item) => {
+    const price = Number(item.price) || 0;
+    const quantity = Number(item.quantity) || 1;
+    return (price * quantity).toFixed(2);
+  };
+
+  // محاسبه مجموع قیمت کل آیتم‌های سبد خرید
+  const calculateTotal = useMemo(() => {
+    return cartItems
+      .reduce((sum, item) => sum + Number(calculatePrice(item)), 0)
+      .toFixed(2);
+  }, [cartItems]);
+
+  // مدیریت حذف آیتم از سبد خرید
   const handleRemoveFromCart = (productId, color, size) => {
-    console.log("Removing item:", { productId, color, size });
     removeCartItem({
       productId,
       color,
@@ -24,61 +37,36 @@ const Cart = () => {
     });
   };
 
-  // Safely calculate the price of a single item
-  const calculatePrice = (item) => {
-    const price = Number(item.price) || 0;  // اطمینان از وجود قیمت
-    const qty = Number(item.qty) || 1;      // اطمینان از وجود تعداد
-    return (price * qty).toFixed(2);
-  };
-
-  // Calculates total price for all items
-  const calculateTotal = useMemo(() => {
-    return cartItems
-      .reduce((sum, item) => {
-        const itemTotal = parseFloat(calculatePrice(item));
-        return sum + (!isNaN(itemTotal) ? itemTotal : 0);
-      }, 0)
-      .toFixed(2);
-  }, [cartItems]);
-
-  useEffect(() => {
-    console.log("Cart items:", cartItems);
-  }, [cartItems]);
-
-  // مدیریت خالی بودن سبد خرید
-  if (!cartItems || cartItems.length === 0) {
+  // بررسی خالی بودن سبد خرید
+  if (cartItems.length === 0) {
     return (
       <Container>
-        <Typography variant="h6" component="h2">
-          Your cart is empty <Link to="/">Go Back</Link>
-        </Typography>
+        <Typography variant="h5">Your cart is empty.</Typography>
+        <Link to="/">Go Back to Shop</Link>
       </Container>
     );
   }
 
   return (
     <Container>
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Typography variant="h4" gutterBottom>
         Shopping Cart
       </Typography>
-
+      
       {error && <Typography color="error">{error}</Typography>}
 
       <List>
-        {cartItems.map(({ productId, name, color, size, price, qty }) => (
-          <ListItem key={`${productId}-${color}-${size}`}>
+        {cartItems.map((item, index) => (
+          <ListItem key={`${item.productId}-${index}`}>
             <ListItemText
-              primary={`${name} (${color ? color : "No color selected"}, ${
-                size ? size : "No size selected"
-              })`}
-              secondary={`€${calculatePrice({ price, qty })} (x${qty || 1})`}
+              primary={`${item.name} (${item.color}, ${item.size})`}
+              secondary={`Quantity: ${item.quantity}, Price: €${calculatePrice(item)}`}
             />
-
             <ListItemSecondaryAction>
               <Button
                 variant="contained"
                 color="secondary"
-                onClick={() => handleRemoveFromCart(productId, color, size)}
+                onClick={() => handleRemoveFromCart(item.productId, item.color, item.size)}
               >
                 Remove
               </Button>
@@ -87,7 +75,7 @@ const Cart = () => {
         ))}
       </List>
 
-      <Typography variant="h5" component="h2">
+      <Typography variant="h5" mt={2}>
         Total: €{calculateTotal}
       </Typography>
 

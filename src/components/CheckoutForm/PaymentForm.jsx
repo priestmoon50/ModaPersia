@@ -1,70 +1,113 @@
 import React from "react";
-import { Box, Typography, RadioGroup, FormControlLabel, Radio, Button, CircularProgress, Alert } from "@mui/material";
-import { CardElement } from "@stripe/react-stripe-js";  
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";  // <-- Add this import
+import { Grid, TextField, MenuItem, Select, InputLabel, FormControl } from "@mui/material";
+import { Controller } from "react-hook-form";
 
-const PaymentForm = ({
-  paymentMethod,
-  setPaymentMethod,
-  handleSubmit,
-  isFormValid,
-  loading,
-  error,
-  success,
-  handlePayPalApprove,
-  calculateTotal,
-}) => {
-
+const PaymentForm = ({ control }) => {
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Payment
-      </Typography>
-      {error && <Alert severity="error">{error}</Alert>}
-      {success && <Alert severity="success">Payment successful! Your order has been placed.</Alert>}
-      {loading && <CircularProgress />}
-
-      <Typography variant="h6" component="h3" gutterBottom>
-        Select Payment Method
-      </Typography>
-      <RadioGroup value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-        <FormControlLabel value="stripe" control={<Radio />} label="Credit Card (Stripe)" />
-        <FormControlLabel value="paypal" control={<Radio />} label="PayPal" />
-        <FormControlLabel value="sofort" control={<Radio />} label="Sofort (Germany)" />
-        <FormControlLabel value="giropay" control={<Radio />} label="Giropay (Germany)" />
-        <FormControlLabel value="ideal" control={<Radio />} label="iDEAL (Netherlands)" />
-      </RadioGroup>
-
-      {paymentMethod === "stripe" && <CardElement />}
-      {paymentMethod === "paypal" && (
-        <PayPalScriptProvider options={{ "client-id": "your-client-id" }}>
-          <PayPalButtons
-            createOrder={(data, actions) => {
-              return actions.order.create({
-                purchase_units: [
-                  {
-                    amount: {
-                      value: calculateTotal(),
-                    },
-                  },
-                ],
-              });
-            }}
-            onApprove={handlePayPalApprove}
+    <Grid container spacing={1}>
+      {/* انتخاب روش پرداخت */}
+      <Grid item xs={12}>
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel id="payment-method-label">Payment Method</InputLabel>
+          <Controller
+            name="paymentMethod"
+            control={control}
+            defaultValue="creditCard" // مقدار پیش‌فرض
+            render={({ field }) => (
+              <Select
+                {...field}
+                labelId="payment-method-label"
+                id="payment-method"
+                label="Payment Method"
+              >
+                <MenuItem value="creditCard">Credit Card</MenuItem>
+                <MenuItem value="paypal">PayPal</MenuItem>
+                <MenuItem value="cashOnDelivery">Cash on Delivery</MenuItem>
+              </Select>
+            )}
           />
-        </PayPalScriptProvider>
-      )}
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        disabled={!isFormValid || loading}
-        sx={{ mt: 3 }}
-      >
-        Pay
-      </Button>
-    </Box>
+        </FormControl>
+      </Grid>
+
+      {/* شماره کارت اعتباری */}
+      <Grid item xs={12}>
+        <Controller
+          name="cardNumber"
+          control={control}
+          defaultValue=""
+          rules={{
+            required: "Card number is required",
+            pattern: {
+              value: /^[0-9]{16}$/,
+              message: "Invalid card number",
+            },
+          }}
+          render={({ field, fieldState: { error } }) => (
+            <TextField
+              {...field}
+              label="Card Number"
+              fullWidth
+              error={!!error}
+              helperText={error ? error.message : null}
+              sx={{ mb: 2 }}
+            />
+          )}
+        />
+      </Grid>
+
+      {/* تاریخ انقضا */}
+      <Grid item xs={12} sm={6}>
+        <Controller
+          name="expiryDate"
+          control={control}
+          defaultValue=""
+          rules={{
+            required: "Expiry date is required",
+            pattern: {
+              value: /^(0[1-9]|1[0-2])\/\d{2}$/,
+              message: "Invalid expiry date (MM/YY)",
+            },
+          }}
+          render={({ field, fieldState: { error } }) => (
+            <TextField
+              {...field}
+              label="Expiry Date (MM/YY)"
+              fullWidth
+              error={!!error}
+              helperText={error ? error.message : null}
+              sx={{ mb: 0.5 }}
+            />
+          )}
+        />
+      </Grid>
+
+      {/* CVV */}
+      <Grid item xs={12} sm={6}>
+        <Controller
+          name="cvv"
+          control={control}
+          defaultValue=""
+          rules={{
+            required: "CVV is required",
+            pattern: {
+              value: /^[0-9]{3,4}$/,
+              message: "Invalid CVV",
+            },
+          }}
+          render={({ field, fieldState: { error } }) => (
+            <TextField
+              {...field}
+              label="CVV"
+              fullWidth
+              error={!!error}
+              helperText={error ? error.message : null}
+              sx={{ mb: 0.5 }}
+            />
+          )}
+        />
+      </Grid>
+    </Grid>
   );
 };
 
-export default PaymentForm;
+export default PaymentForm; 

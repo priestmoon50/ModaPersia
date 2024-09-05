@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../store/UserContext";
 import { ProductContext } from "../store/ProductContext";
+import CartContext from "../store/CartContext";
 import ProductCard from "./ProductCard";
 import ProductFormDialog from "./ProductFormDialog"; // فرم دیالوگ به عنوان یک کامپوننت جداگانه
 
@@ -20,7 +21,7 @@ const ProductPage = () => {
 
   const { userInfo } = userContextState?.userLogin || {};
   const { products = [], loading, error } = productContextState.productList || {};
-
+  const { addCartItem } = useContext(CartContext);
   const [open, setOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -40,7 +41,10 @@ const ProductPage = () => {
   const handleAddToCart = useCallback((item) => {
     console.log("Item added to cart:", item);
     // منطق افزودن به سبد خرید
-  }, []);
+    // اینجا باید تابعی برای ارسال محصول به سبد خرید فراخوانی شود
+    addCartItem(item); // اطمینان حاصل کنید که addCartItem در context استفاده می‌شود
+  }, [addCartItem]);
+  
 
   const handleEdit = useCallback(
     (product) => {

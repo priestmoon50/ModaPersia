@@ -5,7 +5,7 @@ import ProductPage from "./components/pages/ProductPage";
 import ProductDetail from "./components/pages/ProductDetail";
 import Cart from "./components/Cart";
 import CheckoutForm from "./components/CheckoutForm/CheckoutForm";
-import OrderConfirmation from "./components/OrderConfirmation";
+import OrderConfirmation from "./components/CheckoutForm/OrderConfirmation";
 import Navbar from "./components/Navbar";
 import Register from "./components/Register";
 import Login from "./components/Login";
@@ -23,11 +23,10 @@ import { StoreProvider } from "./components/store/StoreContext";
 import { CartProvider } from "./components/store/CartContext"; // اضافه کردن CartProvider
 import { ProductProvider } from "./components/store/ProductContext";
 import { UserProvider } from "./components/store/UserContext";
-import { AdminProvider } from "./components/store/AdminContext";  // اضافه کردن AdminProvider
+import { AdminProvider } from "./components/store/AdminContext"; // اضافه کردن AdminProvider
 import Footer from "./components/pages/Footer";
 import FAQ from "./components/pages/FAQ";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
-
 
 // تنظیم Stripe با کلید عمومی
 const stripePromise = loadStripe(
@@ -53,56 +52,72 @@ const App = () => {
     <StoreProvider>
       <UserProvider>
         <ProductProvider>
-        <CartProvider> 
-          <AdminProvider>  {/* اضافه کردن AdminProvider برای پوشش تمام بخش‌های ادمین */}
-            <Router>
-              <Navbar />
-              <Container maxWidth="lg">
-                <LanguageDialog
-                  open={languageDialogOpen}
-                  onClose={handleLanguageDialogClose}
-                />
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/faq" element={<FAQ />} />
-                  <Route path="/products" element={<ProductPage />} />
-                  <Route path="/responsive" element={<ResponsiveComponent />} />
-                  <Route path="/product/:id" element={<ProductDetail />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route
-                    path="/checkout"
-                    element={
-                      <Elements stripe={stripePromise}>
-                        <CheckoutForm />
-                      </Elements>
-                    }
+          <CartProvider>
+            <AdminProvider>
+              {" "}
+              {/* اضافه کردن AdminProvider برای پوشش تمام بخش‌های ادمین */}
+              <Router>
+                <Navbar />
+                <Container maxWidth="lg">
+                  <LanguageDialog
+                    open={languageDialogOpen}
+                    onClose={handleLanguageDialogClose}
                   />
-                  <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                  <Route path="/order-tracking" element={<OrderTracking />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <ProfilePage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="/admin/login" element={<AdminLoginPage />} />
-                  <Route
-                    path="/admin/*"
-                    element={
-                      <ProtectedAdminRoute>
-                        <AdminRoutes />
-                      </ProtectedAdminRoute>
-                    }
-                  />
-                </Routes>
-              </Container>
-              <Footer />
-            </Router>
-          </AdminProvider>
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/faq" element={<FAQ />} />
+                    <Route path="/products" element={<ProductPage />} />
+                    <Route
+                      path="/responsive"
+                      element={<ResponsiveComponent />}
+                    />
+                    <Route path="/product/:id" element={<ProductDetail />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route
+                      path="/checkout"
+                      element={
+                        <Elements stripe={stripePromise}>
+                          <CheckoutForm />
+                        </Elements>
+                      }
+                    />
+                    <Route
+                      path="/order-confirmation"
+                      element={<OrderConfirmation />}
+                    />
+                    <Route
+                      path="/order-tracking"
+                      element={
+                        <ProtectedRoute>
+                          <OrderTracking />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <ProfilePage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="/admin/login" element={<AdminLoginPage />} />
+                    <Route
+                      path="/admin/*"
+                      element={
+                        <ProtectedAdminRoute>
+                          <AdminRoutes />
+                        </ProtectedAdminRoute>
+                      }
+                    />
+                  </Routes>
+                </Container>
+                <Footer />
+              </Router>
+            </AdminProvider>
           </CartProvider>
         </ProductProvider>
       </UserProvider>
