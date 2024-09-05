@@ -11,13 +11,17 @@ import {
 } from "@mui/material";
 import CartContext from "./store/CartContext";
 
-
 const Cart = () => {
   const { cartItems, error, removeCartItem } = useContext(CartContext); // destructuring مستقیم
 
   // Handles removing item from cart
-  const handleRemoveFromCart = (id, color, size) => {
-    removeCartItem(id, color, size);
+  const handleRemoveFromCart = (productId, color, size) => {
+    console.log("Removing item:", { productId, color, size });
+    removeCartItem({
+      productId,
+      color,
+      size,
+    });
   };
 
   // Safely calculate the price of a single item
@@ -26,7 +30,6 @@ const Cart = () => {
     const qty = Number(item.qty) || 1;      // اطمینان از وجود تعداد
     return (price * qty).toFixed(2);
   };
-  
 
   // Calculates total price for all items
   const calculateTotal = useMemo(() => {
@@ -62,22 +65,20 @@ const Cart = () => {
       {error && <Typography color="error">{error}</Typography>}
 
       <List>
-        {cartItems.map((item) => (
-          <ListItem key={`${item.product}_${item.color}_${item.size}`}>
+        {cartItems.map(({ productId, name, color, size, price, qty }) => (
+          <ListItem key={`${productId}-${color}-${size}`}>
             <ListItemText
-              primary={`${item.name} (${
-                item.color ? item.color : "No color selected"
-              }, ${item.size ? item.size : "No size selected"})`}
-              secondary={`€${calculatePrice(item)} (x${item.qty || 1})`}
+              primary={`${name} (${color ? color : "No color selected"}, ${
+                size ? size : "No size selected"
+              })`}
+              secondary={`€${calculatePrice({ price, qty })} (x${qty || 1})`}
             />
 
             <ListItemSecondaryAction>
               <Button
                 variant="contained"
                 color="secondary"
-                onClick={() =>
-                  handleRemoveFromCart(item.product, item.color, item.size)
-                }
+                onClick={() => handleRemoveFromCart(productId, color, size)}
               >
                 Remove
               </Button>

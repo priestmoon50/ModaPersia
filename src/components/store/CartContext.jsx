@@ -35,16 +35,17 @@ const cartReducer = (state, action) => {
       }
     
 
-    case "REMOVE_FROM_CART":
-      return {
-        ...state,
-        cartItems: state.cartItems.filter(
-          (x) =>
-            x.productId !== action.payload.productId ||
-            x.size !== action.payload.size ||
-            x.color !== action.payload.color
-        ),
-      };
+      case "REMOVE_FROM_CART":
+        return {
+          ...state,
+          cartItems: state.cartItems.filter(
+            (item) =>
+              item.productId !== action.payload.productId ||
+              item.size !== action.payload.size ||
+              item.color !== action.payload.color
+          ),
+        };
+      
 
     case "SET_ERROR":
       return { ...state, error: action.payload };
@@ -88,4 +89,4 @@ export const CartProvider = ({ children }) => {
   );
 };
 
-export default CartContext;  // اطمینان حاصل کنید که CartContext به عنوان default صادر می‌شود.
+export default CartContext; 
