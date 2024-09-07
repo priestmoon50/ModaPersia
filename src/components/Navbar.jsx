@@ -27,7 +27,6 @@ import { useTranslation } from "react-i18next";
 import CartContext from "./store/CartContext";
 import { UserContext } from "./store/UserContext"; // Import UserContext
 
-
 const Navbar = () => {
   const { state, logoutUser } = useContext(UserContext); // Use UserContext instead of StoreContext
   const { cartCount } = useContext(CartContext); // گرفتن تعداد آیتم‌های سبد خرید از CartContext
@@ -175,6 +174,9 @@ const Navbar = () => {
             </Button>
             {user ? (
               <>
+                <Button color="inherit" component={Link} to="/profile">
+                  Profile
+                </Button>
                 <Button color="inherit" onClick={handleLogout}>
                   Logout
                 </Button>

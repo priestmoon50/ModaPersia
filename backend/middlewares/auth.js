@@ -4,22 +4,29 @@ const User = require("../models/User");
 const Admin = require("../models/Admin");
 const logRequest = require("../utils/logRequest");
 
+
+const getTokenFromHeaders = (req) => {
+  const authorizationHeader = req.headers.authorization;
+  if (authorizationHeader && authorizationHeader.startsWith('Bearer')) {
+    return authorizationHeader.split(" ")[1];
+  }
+  return null;
+};
+
 // Middleware for protecting user routes
 const protectUser = asyncHandler(async (req, res, next) => {
   logRequest("Protect User Middleware Hit", { path: req.path, method: req.method });
 
-  const token = req.headers.authorization?.startsWith('Bearer') 
-    ? req.headers.authorization.split(" ")[1] 
-    : null;
+  const token = getTokenFromHeaders(req);
 
   if (!token) {
     logRequest("No Token Provided", { path: req.path, method: req.method });
-    return res.status(401).json({ message: "Not authorized, no token" });
+    return res.status(401).json({ message: "Not authorized, no token provided" });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    logRequest("Token Decoded", { decoded });
+    logRequest("Token Decoded Successfully", { decoded });
 
     req.user = await User.findById(decoded.id).select("-password");
     if (!req.user) {
@@ -31,7 +38,15 @@ const protectUser = asyncHandler(async (req, res, next) => {
     next();
   } catch (error) {
     logRequest("Token Verification Failed", { error: error.message });
-    return res.status(401).json({ message: "Not authorized, token failed" });
+
+    // Handling specific JWT error types for more informative responses
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: "Token expired, please login again" });
+    } else if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: "Invalid token, please login again" });
+    } else {
+      return res.status(401).json({ message: "Not authorized, token verification failed" });
+    }
   }
 });
 

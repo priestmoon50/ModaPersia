@@ -1,12 +1,22 @@
 const asyncHandler = require("express-async-handler");
 const UserAddress = require("../models/UserAddress");
 const logRequest = require("../utils/logRequest");
+const { body, validationResult } = require('express-validator');
 
 // @desc    Add a new address for a user
 // @route   POST /api/users/:userId/addresses
 // @access  Private
 const addAddress = asyncHandler(async (req, res) => {
-  // لاگ ریکوئست برای ثبت اطلاعات درخواست ورودی
+  // Ensure the user is adding an address to their own account
+  if (req.user._id.toString() !== req.params.userId) {
+    return res.status(403).json({ message: "Unauthorized to add address to this account" });
+  }
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   logRequest("Add Address Request", {
     userId: req.user._id,
     body: req.body,
@@ -33,7 +43,10 @@ const addAddress = asyncHandler(async (req, res) => {
 // @route   GET /api/users/:userId/addresses
 // @access  Private
 const getAddresses = asyncHandler(async (req, res) => {
-  // لاگ ریکوئست برای ثبت اطلاعات درخواست ورودی
+  if (req.user._id.toString() !== req.params.userId) {
+    return res.status(403).json({ message: "Unauthorized to view addresses for this account" });
+  }
+
   logRequest("Get Addresses Request", {
     userId: req.user._id,
   });

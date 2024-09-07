@@ -14,7 +14,7 @@ import CustomerForm from "./CustomerForm"; // فرم اطلاعات مشتری
 import PaymentForm from "./PaymentForm"; // فرم اطلاعات پرداخت
 
 const CheckoutForm = () => {
-  const { cartItems, clearCart } = useContext(CartContext); // اضافه کردن clearCart برای پاک‌سازی سبد پس از ثبت سفارش
+  const { cartItems, clearCart } = useContext(CartContext); 
   const { handleSubmit, control } = useForm();
   const navigate = useNavigate();
 
@@ -25,7 +25,7 @@ const CheckoutForm = () => {
   const calculateTotal = useMemo(() => {
     return cartItems
       .reduce((sum, item) => sum + (item.price || 0) * (item.qty || 1), 0)
-      .toFixed(2); // اطمینان از اینکه price و qty وجود دارند
+      .toFixed(2); 
   }, [cartItems]);
 
   const onSubmit = async (data) => {
@@ -33,6 +33,12 @@ const CheckoutForm = () => {
     setError(null);
 
     try {
+      // گرفتن توکن از localStorage
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("Token not found. Please log in again.");
+      }
+
       const orderData = {
         customer: {
           name: data.name,
@@ -52,9 +58,6 @@ const CheckoutForm = () => {
         total: calculateTotal,
       };
 
-      // گرفتن توکن از localStorage
-      const token = localStorage.getItem("authToken");
-
       // ارسال اطلاعات سفارش به API با توکن
       const response = await fetch("/api/orders", {
         method: "POST",
@@ -66,7 +69,8 @@ const CheckoutForm = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to place order. Please try again.");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to place order.");
       }
 
       const savedOrder = await response.json();
@@ -79,9 +83,7 @@ const CheckoutForm = () => {
       navigate("/order-confirmation");
     } catch (error) {
       console.error("Error during checkout:", error);
-      setError(
-        "An error occurred while processing your order. Please try again."
-      );
+      setError(error.message || "An error occurred while processing your order. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -9,7 +9,7 @@ import OrderConfirmation from "./components/CheckoutForm/OrderConfirmation";
 import Navbar from "./components/Navbar";
 import Register from "./components/Register";
 import Login from "./components/Login";
-import ProfilePage from "./components/ProfilePage";
+import ProfileScreen from "./components/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ResponsiveComponent from "./components/ResponsiveComponent";
 import LanguageDialog from "./components/LanguageDialog";
@@ -100,7 +100,7 @@ const App = () => {
                       path="/profile"
                       element={
                         <ProtectedRoute>
-                          <ProfilePage />
+                          <ProfileScreen />
                         </ProtectedRoute>
                       }
                     />

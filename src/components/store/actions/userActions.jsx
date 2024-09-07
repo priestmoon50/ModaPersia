@@ -66,12 +66,22 @@ export const register = async (name, email, password, dispatch) => {
   }
 };
 
+
 // Get User Details
 export const getUserDetails = async (id, dispatch) => {
   try {
     dispatch({ type: USER_DETAILS_REQUEST });
 
-    const { data } = await axios.get(`/api/users/${id}`);
+    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+
+    const config = {
+      headers: {
+        Authorization: `Bearer ${userInfo?.token}`,
+      },
+    };
+
+    const { data } = await axios.get(`/api/users/${id}/profile`, config);
+
 
     dispatch({ type: USER_DETAILS_SUCCESS, payload: data });
   } catch (error) {
@@ -80,12 +90,12 @@ export const getUserDetails = async (id, dispatch) => {
       payload: error.response?.data?.message || error.message,
     });
 
-    // Redirect to login page if 401 Unauthorized
     if (error.response?.status === 401) {
       window.location.href = "/login";
     }
   }
 };
+
 
 // Logout
 export const logout = (dispatch) => {

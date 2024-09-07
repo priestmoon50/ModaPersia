@@ -7,11 +7,11 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./Login.css";
 import ForgetPassword from "./ForgetPassword";
-import { UserContext } from "./store/UserContext"; // Import UserContext
+import { UserContext } from "./store/UserContext";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { state, loginUser, logoutUser } = useContext(UserContext); // Use UserContext instead of StoreContext
+  const { state, loginUser, logoutUser, verifyToken } = useContext(UserContext); // Add verifyToken function from context
   const { userLogin } = state; // Get userLogin state from UserContext
   const user = userLogin?.userInfo;
   const isLoggedIn = !!user;
@@ -36,6 +36,29 @@ export default function Login() {
     resolver: yupResolver(schema),
   });
 
+  // اعتبارسنجی توکن در هنگام بارگذاری صفحه
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      const checkTokenValidity = async () => {
+        try {
+          const isValid = await verifyToken(token); // بررسی اعتبار توکن
+          if (!isValid) {
+            logoutUser(); // اگر توکن معتبر نباشد، کاربر از سیستم خارج شود
+            toast.error("نشست شما منقضی شده است. لطفاً مجدداً وارد شوید.");
+            navigate("/login");
+          }
+        } catch (error) {
+          console.error("خطا در اعتبارسنجی توکن:", error);
+          logoutUser();
+          toast.error("خطا در اعتبارسنجی توکن. لطفاً دوباره وارد شوید.");
+          navigate("/login");
+        }
+      };
+      checkTokenValidity();
+    }
+  }, [navigate, logoutUser, verifyToken]);
+
   useEffect(() => {
     const savedUsername = localStorage.getItem("savedUsername");
     const savedPassword = localStorage.getItem("savedPassword");
@@ -50,7 +73,11 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await loginUser(data.username, data.password);
+      const response = await loginUser(data.username, data.password);
+
+      if (response && response.token) {
+        localStorage.setItem("authToken", response.token); // ذخیره توکن در localStorage
+      }
 
       if (rememberMe) {
         localStorage.setItem("savedUsername", data.username);
@@ -84,9 +111,7 @@ export default function Login() {
         <h2>ورود</h2>
         {isLoggedIn ? (
           <div>
-            <p>
-              شما با نام {user?.username} وارد شده‌اید. لطفا ابتدا خارج شوید.
-            </p>
+            <p>شما با نام {user?.username} وارد شده‌اید. لطفا ابتدا خارج شوید.</p>
             <button onClick={handleLogout} className="gaming-button">
               خروج
             </button>
@@ -101,7 +126,6 @@ export default function Login() {
                   {...register("username")}
                   placeholder="نام کاربری"
                   className={errors.username ? "error" : ""}
-                  required
                 />
                 {errors.username && <p>{errors.username.message}</p>}
               </div>
@@ -115,7 +139,6 @@ export default function Login() {
                   {...register("password")}
                   placeholder="رمز عبور"
                   className={errors.password ? "error" : ""}
-                  required
                 />
                 <i
                   className={`fas ${

@@ -2,11 +2,17 @@ const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const { generateUserToken } = require("../utils/generateUserToken");
+const { body, validationResult } = require('express-validator');
 
 // @desc    Register a new user
 // @route   POST /api/users/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { name, email, password } = req.body;
 
   const userExists = await User.findOne({ email });
@@ -28,7 +34,7 @@ const registerUser = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
-      token: generateUserToken(user), // استفاده از توکن جدید
+      token: generateUserToken(user), // Generating JWT token
     });
   } else {
     res.status(400);
@@ -50,11 +56,10 @@ const authUser = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
-      token: generateUserToken(user), // استفاده از توکن جدید
+      token: generateUserToken(user), // Generating JWT token
     });
   } else {
-    res.status(401);
-    throw new Error("Invalid email or password");
+    res.status(401).json({ message: "Invalid email or password" });
   }
 });
 
@@ -62,6 +67,10 @@ const authUser = asyncHandler(async (req, res) => {
 // @route   GET /api/users/:userId/profile
 // @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
+  if (req.user._id.toString() !== req.params.userId) {
+    return res.status(403).json({ message: "Unauthorized access to user profile" });
+  }
+
   const user = await User.findById(req.params.userId);
 
   if (user) {
