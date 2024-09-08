@@ -23,9 +23,13 @@ const AddToFavoritesButton = ({ productId }) => {
           },
         });
 
-        // بررسی اینکه آیا این محصول در لیست علاقه‌مندی‌ها هست یا نه
-        const isProductFavorite = data.items.some((favorite) => favorite._id === productId);
-        setIsFavorite(isProductFavorite);
+        // بررسی اینکه آیا `data` وجود دارد و آیا محصول در لیست علاقه‌مندی‌ها هست یا نه
+        if (data && Array.isArray(data)) {
+          const isProductFavorite = data.some((favorite) => favorite._id === productId);
+          setIsFavorite(isProductFavorite);
+        } else {
+          console.error('Invalid data format received from /api/favorites');
+        }
       } catch (error) {
         console.error('Failed to fetch favorites', error);
       }
@@ -44,6 +48,8 @@ const AddToFavoritesButton = ({ productId }) => {
 
     try {
       const token = JSON.parse(userInfo).token;
+
+      console.log('Product ID being toggled:', productId); // Log the productId
 
       if (isFavorite) {
         // حذف از لیست علاقه‌مندی‌ها
