@@ -6,18 +6,14 @@ const Product = require("../models/Product");
 // @route   GET /api/favorites
 // @access  Private
 const getFavorites = asyncHandler(async (req, res) => {
-  try {
-    const favorite = await Favorite.findOne({ user: req.user._id }).populate("items");
-
-    if (favorite) {
-      res.json(favorite.items);
-    } else {
-      res.status(404).json({ message: "No favorites found" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: "Failed to retrieve favorites" });
+  const favorite = await Favorite.findOne({ user: req.user._id }).populate("items");
+  if (favorite) {
+    res.json(favorite.items);
+  } else {
+    res.status(404).json({ message: "No favorites found" });
   }
 });
+
 
 // @desc    Add product to favorites
 // @route   POST /api/favorites

@@ -5,9 +5,12 @@ import {
   USER_LOGIN_SUCCESS,
   USER_LOGIN_FAIL,
   USER_LOGOUT,
+  USER_UPDATE_PROFILE_REQUEST,
+  USER_UPDATE_PROFILE_SUCCESS,
+  USER_UPDATE_PROFILE_FAIL,
 } from "./constants/userConstants";
 import { userReducer, userInitialState } from "./reducers/userReducer";
-import { login, logout, register, getUserDetails } from "./actions/userActions";
+import { login, logout, register, getUserDetails, updateProfile } from "./actions/userActions";
 
 // ایجاد Context برای User
 const UserContext = createContext();
@@ -144,6 +147,25 @@ const UserProvider = ({ children }) => {
     [dispatch]
   );
 
+  // اکشن به‌روزرسانی پروفایل کاربر
+  const updateUserProfile = useCallback(
+    async (user) => {
+      try {
+        dispatch({ type: USER_UPDATE_PROFILE_REQUEST });
+        const response = await updateProfile(user, dispatch); // کل user را به عنوان userData ارسال کنید
+        saveUserInfoToStorage(response);
+        dispatch({ type: USER_UPDATE_PROFILE_SUCCESS, payload: response });
+      } catch (error) {
+        const errorMessage = handleError(error, "Failed to update profile");
+        dispatch({ type: USER_UPDATE_PROFILE_FAIL, payload: errorMessage });
+        setError(errorMessage);
+      }
+    },
+    [dispatch]
+  );
+  
+
+  
   return (
     <UserContext.Provider
       value={{
@@ -153,6 +175,7 @@ const UserProvider = ({ children }) => {
         logoutUser,
         registerUser,
         getUserDetailsAction,
+        updateUserProfile,
         error,
       }}
     >

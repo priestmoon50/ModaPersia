@@ -16,16 +16,15 @@ const AddToFavoritesButton = ({ productId }) => {
 
       try {
         const token = JSON.parse(userInfo).token;
-        const userId = JSON.parse(userInfo)._id;
 
-        const { data } = await axios.get(`/api/users/${userId}/favorites`, {
+        const { data } = await axios.get(`/api/favorites`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         // بررسی اینکه آیا این محصول در لیست علاقه‌مندی‌ها هست یا نه
-        const isProductFavorite = data.some((favorite) => favorite._id === productId);
+        const isProductFavorite = data.items.some((favorite) => favorite._id === productId);
         setIsFavorite(isProductFavorite);
       } catch (error) {
         console.error('Failed to fetch favorites', error);
@@ -45,11 +44,10 @@ const AddToFavoritesButton = ({ productId }) => {
 
     try {
       const token = JSON.parse(userInfo).token;
-      const userId = JSON.parse(userInfo)._id;
 
       if (isFavorite) {
         // حذف از لیست علاقه‌مندی‌ها
-        await axios.delete(`/api/users/${userId}/favorites/${productId}`, {
+        await axios.delete(`/api/favorites/${productId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -58,7 +56,7 @@ const AddToFavoritesButton = ({ productId }) => {
         alert('Product removed from favorites');
       } else {
         // اضافه کردن به لیست علاقه‌مندی‌ها
-        await axios.post(`/api/users/${userId}/favorites`, { productId }, {
+        await axios.post(`/api/favorites`, { productId }, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

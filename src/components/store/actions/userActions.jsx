@@ -10,6 +10,9 @@ import {
   USER_DETAILS_REQUEST,
   USER_DETAILS_SUCCESS,
   USER_DETAILS_FAIL,
+  USER_UPDATE_PROFILE_REQUEST,
+  USER_UPDATE_PROFILE_SUCCESS,
+  USER_UPDATE_PROFILE_FAIL,
 } from "../constants/userConstants";
 
 // Utility functions
@@ -17,7 +20,6 @@ const getErrorMessage = (error) => {
   return error.response?.data?.message || error.message || "An error occurred";
 };
 
-// بهبود تابع getConfig
 const getConfig = () => {
   const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
   return userInfo?.token
@@ -29,7 +31,6 @@ const getConfig = () => {
     : {};
 };
 
-// ذخیره اطلاعات در localStorage
 const saveUserInfoToStorage = (userInfo) => {
   if (userInfo) {
     try {
@@ -40,12 +41,10 @@ const saveUserInfoToStorage = (userInfo) => {
   }
 };
 
-// پاک‌سازی اطلاعات از localStorage
 const clearUserInfoFromStorage = () => {
   localStorage.removeItem("userInfo");
 };
 
-// مدیریت خطاها و ریدایرکت
 const handleErrorAndRedirect = (error, dispatch, type, navigate) => {
   const errorMessage = getErrorMessage(error);
   dispatch({ type, payload: errorMessage });
@@ -63,7 +62,7 @@ export const login = async (email, password, dispatch, navigate) => {
     const { data } = await axios.post("/api/users/login", { email, password });
 
     dispatch({ type: USER_LOGIN_SUCCESS, payload: data });
-    saveUserInfoToStorage(data);  // به جای ذخیره‌سازی مستقیم در localStorage
+    saveUserInfoToStorage(data);
 
     navigate("/products");
   } catch (error) {
@@ -83,7 +82,7 @@ export const register = async (name, email, password, dispatch, navigate) => {
     });
 
     dispatch({ type: USER_REGISTER_SUCCESS, payload: data });
-    saveUserInfoToStorage(data);  // به جای ذخیره‌سازی مستقیم در localStorage
+    saveUserInfoToStorage(data);
 
     navigate("/products");
   } catch (error) {
@@ -106,6 +105,27 @@ export const getUserDetails = async (id, dispatch, navigate) => {
     dispatch({ type: USER_DETAILS_SUCCESS, payload: data });
   } catch (error) {
     handleErrorAndRedirect(error, dispatch, USER_DETAILS_FAIL, navigate);
+  }
+};
+
+// Update User Profile
+export const updateProfile = async (userData, dispatch, navigate) => {
+  try {
+    dispatch({ type: USER_UPDATE_PROFILE_REQUEST });
+
+    const config = getConfig();
+    if (!config.headers.Authorization) {
+      throw new Error("User is not authenticated");
+    }
+
+    const { data } = await axios.put(`/api/users/${userData.id}/profile`, userData, config);
+
+    dispatch({ type: USER_UPDATE_PROFILE_SUCCESS, payload: data });
+    saveUserInfoToStorage(data);
+
+    navigate("/profile");
+  } catch (error) {
+    handleErrorAndRedirect(error, dispatch, USER_UPDATE_PROFILE_FAIL, navigate);
   }
 };
 

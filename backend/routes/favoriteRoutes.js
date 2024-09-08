@@ -1,6 +1,6 @@
 const express = require("express");
 const asyncHandler = require("express-async-handler");
-const { protectUser } = require("../middlewares/auth"); // استفاده از protectUser از auth.js
+const { protectUser } = require("../middlewares/auth"); 
 const Favorite = require("../models/Favorite");
 const Product = require("../models/Product");
 const { check, validationResult } = require("express-validator");
@@ -25,6 +25,7 @@ router.post("/", protectUser, validateProductId, asyncHandler(async (req, res) =
   const user = req.user._id;
   const { productId } = req.body;
 
+  // بررسی اینکه آیا محصول وجود دارد یا خیر
   const product = await Product.findById(productId);
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
@@ -32,9 +33,11 @@ router.post("/", protectUser, validateProductId, asyncHandler(async (req, res) =
 
   let favorite = await Favorite.findOne({ user });
 
+  // ایجاد لیست علاقه‌مندی جدید اگر وجود ندارد
   if (!favorite) {
     favorite = new Favorite({ user, items: [productId] });
   } else {
+    // بررسی اینکه آیا محصول قبلاً در علاقه‌مندی‌ها وجود دارد یا خیر
     if (favorite.items.includes(productId)) {
       return res.status(400).json({ message: "Product already in favorites" });
     }
@@ -46,12 +49,13 @@ router.post("/", protectUser, validateProductId, asyncHandler(async (req, res) =
 }));
 
 // Remove item from favorites
-router.delete("/:productId", protectUser, validateProductId, asyncHandler(async (req, res) => {
+router.delete("/:productId", protectUser, asyncHandler(async (req, res) => {
   const user = req.user._id;
   const { productId } = req.params;
 
   const favorite = await Favorite.findOne({ user });
 
+  // بررسی اینکه آیا محصول در علاقه‌مندی‌ها وجود دارد یا خیر
   if (favorite && favorite.items.includes(productId)) {
     favorite.items = favorite.items.filter(item => item.toString() !== productId);
     await favorite.save();
@@ -70,7 +74,7 @@ router.get("/", protectUser, asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "No favorites found" });
   }
 
-  res.json(favorite);
+  res.json(favorite.items); // ارسال لیست علاقه‌مندی‌ها
 }));
 
 module.exports = router;

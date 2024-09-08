@@ -87,8 +87,52 @@ const getUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
+
+// @desc    Update user profile
+// @route   PUT /api/users/:userId/profile
+// @access  Private
+const updateUserProfile = asyncHandler(async (req, res) => {
+  // بررسی اینکه آیا کاربر اجازه به‌روزرسانی دارد یا خیر
+  if (req.user._id.toString() !== req.params.userId) {
+    return res.status(403).json({ message: "Unauthorized access to user profile" });
+  }
+
+  const user = await User.findById(req.params.userId);
+
+  if (user) {
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+    user.phoneNumber = req.body.phoneNumber || user.phoneNumber;
+
+    // به‌روزرسانی رمز عبور در صورت موجود بودن
+    if (req.body.password) {
+      user.password = req.body.password;
+    }
+
+    // ذخیره کاربر به‌روزشده
+    const updatedUser = await user.save();
+
+    // ارسال پاسخ موفقیت‌آمیز به کلاینت
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      phoneNumber: updatedUser.phoneNumber,
+      isAdmin: updatedUser.isAdmin,
+      token: generateUserToken(updatedUser), // ارسال توکن جدید
+    });
+  } else {
+    res.status(404).json({ message: "User not found" });
+  }
+});
+
+
+
+
+
 module.exports = {
   registerUser,
   authUser,
   getUserProfile,
+  updateUserProfile, 
 };

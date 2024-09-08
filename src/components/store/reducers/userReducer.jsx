@@ -9,6 +9,9 @@ import {
   USER_DETAILS_REQUEST,
   USER_DETAILS_SUCCESS,
   USER_DETAILS_FAIL,
+  USER_UPDATE_PROFILE_REQUEST,
+  USER_UPDATE_PROFILE_SUCCESS,
+  USER_UPDATE_PROFILE_FAIL,
 } from "../constants/userConstants";
 
 // وضعیت اولیه `userInitialState`
@@ -28,7 +31,14 @@ const userInitialState = {
     user: null,
     error: null,
   },
+
+  userProfileUpdate: {
+    loading: false,
+    success: false,
+    error: null,
+  },
 };
+
 
 // تعریف `userReducer` برای مدیریت اکشن‌های مربوط به کاربر
 const userReducer = (state = userInitialState, action) => {
@@ -105,6 +115,36 @@ const userReducer = (state = userInitialState, action) => {
         userDetails: {
           ...state.userDetails,
           loading: false,
+          error: action.payload,
+        },
+      };
+
+
+      // افزودن اکشن‌های جدید
+    case USER_UPDATE_PROFILE_REQUEST:
+      return {
+        ...state,
+        userProfileUpdate: {
+          loading: true,
+          success: false,
+          error: null,
+        },
+      };
+    case USER_UPDATE_PROFILE_SUCCESS:
+      return {
+        ...state,
+        userProfileUpdate: {
+          loading: false,
+          success: true,
+          error: null,
+        },
+      };
+    case USER_UPDATE_PROFILE_FAIL:
+      return {
+        ...state,
+        userProfileUpdate: {
+          loading: false,
+          success: false,
           error: action.payload,
         },
       };
