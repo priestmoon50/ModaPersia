@@ -5,9 +5,29 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  background-image: url('./images/background2.png'); /* مسیر تصویر پس‌زمینه */
+  background-size: cover;/* تصویر باید در صفحه قرار گیرد و کاملاً نمایش داده شود */
+  background-position: bottom center; /* موقعیت تصویر پایین و مرکز صفحه */
+  background-attachment: fixed; /* ثابت بودن تصویر در اسکرول */
+  background-repeat: no-repeat; /* عدم تکرار تصویر */
+  min-height: 100vh; /* پوشش کامل صفحه */
+  padding-bottom: 200px; /* اضافه کردن فاصله برای محصولات */
 }
 
+#main-content {
+  padding-bottom: 100px; /* اضافه کردن فاصله به انتهای محتوا */
+}
+
+
+/* تنظیمات برای کد‌های موجود در سایت */
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+  background-color: rgba(0, 0, 0, 0.8); /* زمینه تیره برای کد‌ها */
+  padding: 0.2em 0.4em; /* فاصله داخلی (padding) */
+  border-radius: 4px; /* گرد کردن گوشه‌ها */
+  color: #f8f8f8; /* رنگ متن کد */
 }
+
+/* سایر استایل‌های دلخواه */
