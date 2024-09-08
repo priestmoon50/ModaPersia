@@ -84,13 +84,13 @@ const Navbar = () => {
       position="static"
       sx={{
         mb: 2,
-        background: "rgba(255, 255, 255, 0.15)",
-        backdropFilter: "blur(12px)",
-        boxShadow: "0 4px 30px rgba(0, 0, 0, 0.1)",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.3)",
+        background: "rgba(0, 0, 0, 0.7)", // شفافیت با رنگ تیره برای بهبود خوانایی
+        backdropFilter: "blur(15px)",
+        boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)", // سایه تیره‌تر برای جلوه بیشتر
+        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
         borderRadius: "12px",
         padding: "0.5rem 1rem",
-        color: mode === "dark" ? "#f8bbd0" : "#8e24aa",
+        color: "#ffffff", // متن سفید برای خوانایی بهتر
       }}
     >
       <Container maxWidth="lg">
@@ -125,7 +125,7 @@ const Navbar = () => {
               sx={{
                 "&:hover": {
                   backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  color: "#e91e63",
+                  color: "#ff4081", // رنگ صورتی ملایم برای تعاملات
                 },
               }}
             >
@@ -141,7 +141,7 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: "#e91e63",
+                      color: "#ff4081",
                     },
                   }}
                 >
@@ -155,7 +155,7 @@ const Navbar = () => {
                     "& .MuiPaper-root": {
                       backgroundColor: "rgba(255, 255, 255, 0.9)",
                       backdropFilter: "blur(10px)",
-                      boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
+                      boxShadow: "0 4px 15px rgba(0, 0, 0, 0.5)", // سایه برای منوی پروفایل
                     },
                   }}
                 >
@@ -175,7 +175,7 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: "#e91e63",
+                      color: "#ff4081",
                     },
                   }}
                 >
@@ -193,7 +193,7 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: "#e91e63",
+                      color: "#ff4081",
                     },
                   }}
                 >
@@ -206,7 +206,7 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: "#e91e63",
+                      color: "#ff4081",
                     },
                   }}
                 >

@@ -1,9 +1,11 @@
-/* General footer styles */
 .footer {
-  background-color: #282828;
+  background-color: rgba(40, 40, 40, 0.8); /* شفاف با حالت تاریکی */
+  backdrop-filter: blur(10px); /* ایجاد حالت شیشه‌ای */
   color: #f1f1f1;
   padding: 40px 20px;
   font-family: 'Roboto', sans-serif;
+  margin-top: 50px; /* ایجاد فاصله بین فوتر و محتوا */
+  border-top: 1px solid rgba(255, 255, 255, 0.2); /* خط بالایی برای جدا کردن فوتر */
 }
 
 .footer h4 {
@@ -29,7 +31,7 @@
   min-width: 200px;
 }
 
-/* Flexbox for layout */
+/* Flexbox برای چیدمان */
 .footer .footer-top,
 .footer .footer-middle,
 .footer .footer-bottom {
@@ -82,11 +84,11 @@
   text-align: center;
   margin: 0;
   padding: 20px 0;
-  border-top: 1px solid #444;
+  border-top: 1px solid rgba(255, 255, 255, 0.2); /* خط نازک و شفاف در بالای فوتر */
   font-size: 0.9em;
 }
 
-/* Responsive styles */
+/* Responsive Styles */
 @media (max-width: 768px) {
   .footer .footer-top,
   .footer .footer-middle,
