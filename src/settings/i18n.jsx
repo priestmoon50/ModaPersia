@@ -4,7 +4,7 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
   en: {
     translation: {
-      welcome: "Welcome to My Themed App",
+     
       products: "Products",
       login: "Login",
       register: "Register",
@@ -22,6 +22,7 @@ const resources = {
           responsibility: "Responsibility",
           dataSettings: "Data Protection Settings",
         },
+        
         service: {
           title: "Service",
           snipesClique: "SNIPES CLIQUE",

@@ -31,7 +31,7 @@ import { UserContext } from "./store/UserContext";
 
 const Navbar = () => {
   const { state, logoutUser } = useContext(UserContext);
-  const { cartCount } = useContext(CartContext);
+  const { cartItems } = useContext(CartContext); // تغییر: گرفتن cartItems از context
   const { userLogin } = state;
   const user = userLogin?.userInfo;
 
@@ -42,6 +42,12 @@ const Navbar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
   const isAdmin = user?.isAdmin || false;
+
+  // محاسبه تعداد کل آیتم‌ها در سبد خرید
+  const totalItemsInCart = cartItems.reduce(
+    (total, item) => total + item.quantity, // تعداد کل آیتم‌ها
+    0
+  );
 
   useEffect(() => {
     console.log("User status changed:", user);
@@ -138,15 +144,16 @@ const Navbar = () => {
       position="static"
       sx={{
         mb: 2,
-        background: mode === 'dark'
-          ? "rgba(18, 18, 18, 0.9)"
-          : "rgba(255, 255, 255, 0.7)",
+        background:
+          mode === "dark"
+            ? "rgba(18, 18, 18, 0.9)"
+            : "rgba(255, 255, 255, 0.7)",
         backdropFilter: "blur(15px)",
         boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
         borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
         borderRadius: "12px",
         padding: "0.5rem 1rem",
-        color: mode === 'dark' ? "#ffffff" : "#000000",
+        color: mode === "dark" ? "#ffffff" : "#000000",
       }}
     >
       <Container maxWidth="lg">
@@ -170,11 +177,11 @@ const Navbar = () => {
               color: "inherit",
               flexGrow: 1,
               "&:hover": {
-                color: mode === 'dark' ? "#90caf9" : "#1976d2",
+                color: mode === "dark" ? "#90caf9" : "#1976d2",
               },
             }}
           >
-            {t("welcome")}
+            Welcome to ModaPersia
           </Typography>
 
           <Box sx={{ display: { xs: "none", sm: "block" } }}>
@@ -186,7 +193,7 @@ const Navbar = () => {
               sx={{
                 "&:hover": {
                   backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  color: mode === 'dark' ? "#ff4081" : "#1976d2",
+                  color: mode === "dark" ? "#ff4081" : "#1976d2",
                 },
               }}
             >
@@ -201,7 +208,7 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: mode === 'dark' ? "#ff4081" : "#1976d2",
+                      color: mode === "dark" ? "#ff4081" : "#1976d2",
                     },
                   }}
                 >
@@ -213,9 +220,12 @@ const Navbar = () => {
                   onClose={handleProfileMenuClose}
                   sx={{
                     "& .MuiPaper-root": {
-                      backgroundColor: mode === 'dark' ? "rgba(28, 28, 28, 0.9)" : "rgba(255, 255, 255, 0.9)",
+                      backgroundColor:
+                        mode === "dark"
+                          ? "rgba(28, 28, 28, 0.9)"
+                          : "rgba(255, 255, 255, 0.9)",
                       backdropFilter: "blur(10px)",
-                      color: mode === 'dark' ? "#ffffff" : "#000000",
+                      color: mode === "dark" ? "#ffffff" : "#000000",
                       boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
                       borderRadius: "12px",
                     },
@@ -224,7 +234,7 @@ const Navbar = () => {
                   <MenuItem
                     onClick={() => handleProfileNavigate("/profile")}
                     sx={{
-                      color: mode === 'dark' ? "#ffffff" : "#000000",
+                      color: mode === "dark" ? "#ffffff" : "#000000",
                     }}
                   >
                     Update Profile
@@ -232,7 +242,7 @@ const Navbar = () => {
                   <MenuItem
                     onClick={() => handleProfileNavigate("/favorites")}
                     sx={{
-                      color: mode === 'dark' ? "#ffffff" : "#000000",
+                      color: mode === "dark" ? "#ffffff" : "#000000",
                     }}
                   >
                     Favorite List
@@ -240,7 +250,7 @@ const Navbar = () => {
                   <MenuItem
                     onClick={handleLogout}
                     sx={{
-                      color: mode === 'dark' ? "#ffffff" : "#000000",
+                      color: mode === "dark" ? "#ffffff" : "#000000",
                     }}
                   >
                     Logout
@@ -254,11 +264,11 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: mode === 'dark' ? "#ff4081" : "#1976d2",
+                      color: mode === "dark" ? "#ff4081" : "#1976d2",
                     },
                   }}
                 >
-                  <Badge badgeContent={cartCount} color="secondary">
+                  <Badge badgeContent={totalItemsInCart} color="secondary"> {/* تعداد آیتم‌های سبد */}
                     <ShoppingCartIcon />
                   </Badge>
                 </IconButton>
@@ -272,7 +282,7 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: mode === 'dark' ? "#ff4081" : "#1976d2",
+                      color: mode === "dark" ? "#ff4081" : "#1976d2",
                     },
                   }}
                 >
@@ -285,7 +295,7 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: mode === 'dark' ? "#ff4081" : "#1976d2",
+                      color: mode === "dark" ? "#ff4081" : "#1976d2",
                     },
                   }}
                 >
@@ -295,11 +305,7 @@ const Navbar = () => {
             )}
 
             <IconButton color="inherit" onClick={toggleTheme}>
-              {mode === "dark" ? (
-                <Brightness7Icon />
-              ) : (
-                <Brightness4Icon />
-              )}
+              {mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
             </IconButton>
             <LanguageSelector />
           </Box>

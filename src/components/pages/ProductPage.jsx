@@ -7,6 +7,7 @@ import {
   Typography,
   Snackbar,
   Alert,
+  TextField, // برای بخش جستجو
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../store/UserContext";
@@ -22,6 +23,11 @@ const ProductPage = () => {
   const { userInfo } = userContextState?.userLogin || {};
   const { products = [], loading, error } = productContextState.productList || {};
   const { addCartItem } = useContext(CartContext);
+  
+  // State برای دسته‌بندی و جستجو
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  
   const [open, setOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -43,6 +49,12 @@ const ProductPage = () => {
     addCartItem(item); // اطمینان حاصل کنید که addCartItem در context استفاده می‌شود
   }, [addCartItem]);
   
+  // فیلتر محصولات بر اساس دسته‌بندی و جستجو
+  const filteredProducts = products.filter(product => {
+    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   const handleEdit = useCallback(
     (product) => {
@@ -121,7 +133,6 @@ const ProductPage = () => {
     setOpen(true);
     navigate("/admin/add-product");
   }, [navigate]);
-  
 
   const handleSnackbarClose = useCallback(() => {
     setSnackbarOpen(false);
@@ -144,6 +155,55 @@ const ProductPage = () => {
       <Typography variant="h4" gutterBottom sx={{ fontSize: "2.5rem", fontWeight: "bold" }}>
         Products
       </Typography>
+
+      {/* بخش جستجو و فیلتر */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <TextField
+          label="Search Products"
+          variant="outlined"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ width: "40%" }}
+        />
+        <Box>
+          <Button
+            variant={selectedCategory === "all" ? "contained" : "outlined"}
+            onClick={() => setSelectedCategory("all")}
+            sx={{ mx: 1 }}
+          >
+            All
+          </Button>
+          <Button
+            variant={selectedCategory === "manto" ? "contained" : "outlined"}
+            onClick={() => setSelectedCategory("manto")}
+            sx={{ mx: 1 }}
+          >
+            Mantou
+          </Button>
+          <Button
+            variant={selectedCategory === "pants" ? "contained" : "outlined"}
+            onClick={() => setSelectedCategory("pants")}
+            sx={{ mx: 1 }}
+          >
+            Pants
+          </Button>
+          <Button
+            variant={selectedCategory === "shoes" ? "contained" : "outlined"}
+            onClick={() => setSelectedCategory("shoes")}
+            sx={{ mx: 1 }}
+          >
+            Shoes
+          </Button>
+          <Button
+            variant={selectedCategory === "newarrivals" ? "contained" : "outlined"}
+            onClick={() => setSelectedCategory("newarrivals")}
+            sx={{ mx: 1 }}
+          >
+            New Arrivals
+          </Button>
+        </Box>
+      </Box>
+
       {userInfo && userInfo.isAdmin && (
         <Box sx={{ mb: 3 }}>
           <Button
@@ -160,8 +220,9 @@ const ProductPage = () => {
           </Button>
         </Box>
       )}
+
       <Grid container spacing={4}>
-        {products.map((product, index) => (
+        {filteredProducts.map((product, index) => (
           <Grid
             item
             key={`${product._id}-${index}`}
