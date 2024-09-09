@@ -14,7 +14,7 @@ import CustomerForm from "./CustomerForm"; // فرم اطلاعات مشتری
 import PaymentForm from "./PaymentForm"; // فرم اطلاعات پرداخت
 
 const CheckoutForm = () => {
-  const { cartItems, clearCart } = useContext(CartContext); 
+  const { cartItems, clearCart } = useContext(CartContext);
   const { handleSubmit, control } = useForm();
   const navigate = useNavigate();
 
@@ -24,8 +24,12 @@ const CheckoutForm = () => {
   // محاسبه جمع کل سبد خرید
   const calculateTotal = useMemo(() => {
     return cartItems
-      .reduce((sum, item) => sum + (item.price || 0) * (item.qty || 1), 0)
-      .toFixed(2); 
+      .reduce((sum, item) => {
+        const price = Number(item.price) || 0;
+        const qty = Number(item.qty) || 1;
+        return sum + price * qty;
+      }, 0)
+      .toFixed(2);
   }, [cartItems]);
 
   const onSubmit = async (data) => {
@@ -63,7 +67,7 @@ const CheckoutForm = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, // اضافه کردن توکن به هدر
+          Authorization: `Bearer ${token}`, // اضافه کردن توکن به هدر
         },
         body: JSON.stringify(orderData),
       });
@@ -83,7 +87,10 @@ const CheckoutForm = () => {
       navigate("/order-confirmation");
     } catch (error) {
       console.error("Error during checkout:", error);
-      setError(error.message || "An error occurred while processing your order. Please try again.");
+      setError(
+        error.message ||
+          "An error occurred while processing your order. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -117,10 +124,12 @@ const CheckoutForm = () => {
           <Typography variant="h6">Order Summary</Typography>
           {cartItems.map((item, index) => (
             <Typography key={index}>
-              {item.name} ({item.qty} x €{item.price.toFixed(2)}) = €
-              {(item.qty * item.price).toFixed(2)}
+              {item.name} ({item.qty || 1} x €{(item.price || 0).toFixed(2)}) =
+              €{((item.qty || 1) * (item.price || 0)).toFixed(2)}
+              
             </Typography>
           ))}
+
           <Typography variant="h5" mt={2}>
             Total: €{calculateTotal}
           </Typography>
