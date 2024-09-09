@@ -49,6 +49,7 @@ const Navbar = () => {
     0
   );
 
+  // مانیتور تغییرات وضعیت کاربر
   useEffect(() => {
     console.log("User status changed:", user);
   }, [user]);
@@ -268,7 +269,8 @@ const Navbar = () => {
                     },
                   }}
                 >
-                  <Badge badgeContent={totalItemsInCart} color="secondary"> {/* تعداد آیتم‌های سبد */}
+                  <Badge badgeContent={totalItemsInCart} color="secondary">
+                    {/* تعداد آیتم‌های سبد */}
                     <ShoppingCartIcon />
                   </Badge>
                 </IconButton>

@@ -56,6 +56,7 @@ const UserProvider = ({ children }) => {
   useEffect(() => {
     const parsedUserInfo = getUserInfoFromStorage();
     if (parsedUserInfo) {
+      console.log("Loading user info from localStorage:", parsedUserInfo);
       dispatch({ type: USER_LOGIN_SUCCESS, payload: parsedUserInfo });
     }
   }, []);
@@ -135,6 +136,7 @@ const UserProvider = ({ children }) => {
       try {
         dispatch({ type: USER_LOGIN_REQUEST });
         const response = await login(email, password, dispatch);
+        console.log("Login response:", response); // لاگ گرفتن از پاسخ لاگین
         saveUserInfoToStorage(response);
         dispatch({ type: USER_LOGIN_SUCCESS, payload: response });
       } catch (error) {

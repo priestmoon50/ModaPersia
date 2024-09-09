@@ -84,14 +84,17 @@ export default function Login() {
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-
+  
     try {
       const response = await loginUser(data.username, data.password);
-
+      console.log(response.token); 
       if (response && response.token) {
-        localStorage.setItem("authToken", response.token);
-      }
 
+        localStorage.setItem("authToken", response.token);
+  
+
+      }
+  
       if (rememberMe) {
         localStorage.setItem("savedUsername", data.username);
         localStorage.setItem("savedPassword", data.password);
@@ -99,7 +102,7 @@ export default function Login() {
         localStorage.removeItem("savedUsername");
         localStorage.removeItem("savedPassword");
       }
-
+  
       navigate("/profile");
     } catch (error) {
       console.error("Login error:", error);
@@ -111,6 +114,7 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+  
 
   const handleLogout = () => {
     logoutUser();
