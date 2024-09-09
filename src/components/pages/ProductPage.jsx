@@ -40,8 +40,6 @@ const ProductPage = () => {
 
   const handleAddToCart = useCallback((item) => {
     console.log("Item added to cart:", item);
-    // منطق افزودن به سبد خرید
-    // اینجا باید تابعی برای ارسال محصول به سبد خرید فراخوانی شود
     addCartItem(item); // اطمینان حاصل کنید که addCartItem در context استفاده می‌شود
   }, [addCartItem]);
   
@@ -90,7 +88,7 @@ const ProductPage = () => {
         } else {
           await addProduct(formData);
           handleSnackbarOpen("Product added successfully");
-          navigate("/admin/products"); // هدایت به لیست محصولات پس از افزودن محصول جدید
+          navigate("/admin/products");
         }
         handleClose();
       } catch (error) {
@@ -121,7 +119,7 @@ const ProductPage = () => {
   const handleAddNewProduct = useCallback(() => {
     setEditingProduct(null);
     setOpen(true);
-    navigate("/admin/add-product"); // هدایت به صفحه افزودن محصول جدید
+    navigate("/admin/add-product");
   }, [navigate]);
   
 
@@ -142,16 +140,21 @@ const ProductPage = () => {
   }
 
   return (
-    <Container maxWidth="lg">
-      <Typography variant="h4" gutterBottom>
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontSize: "2.5rem", fontWeight: "bold" }}>
         Products
       </Typography>
       {userInfo && userInfo.isAdmin && (
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: 3 }}>
           <Button
             variant="contained"
             color="primary"
             onClick={handleAddNewProduct}
+            sx={{
+              padding: "12px 24px",
+              fontSize: "1.1rem", // افزایش سایز فونت دکمه‌ها
+              fontWeight: "bold",
+            }}
           >
             Add New Product
           </Button>
@@ -166,6 +169,7 @@ const ProductPage = () => {
             sm={6}
             md={4}
             lg={3}
+            sx={{ transition: "transform 0.3s ease"  }} 
           >
             <ProductCard
               product={product}
@@ -196,7 +200,7 @@ const ProductPage = () => {
         <Alert
           onClose={handleSnackbarClose}
           severity={snackbarSeverity}
-          sx={{ width: "100%" }}
+          sx={{ width: "100%", fontSize: "1.1rem", fontWeight: "bold" }}
         >
           {snackbarMessage}
         </Alert>

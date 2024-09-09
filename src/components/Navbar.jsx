@@ -11,6 +11,10 @@ import {
   Box,
   Menu,
   MenuItem,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
 } from "@mui/material";
 import {
   ShoppingCart as ShoppingCartIcon,
@@ -42,6 +46,19 @@ const Navbar = () => {
   useEffect(() => {
     console.log("User status changed:", user);
   }, [user]);
+
+  // مدیریت اسکرول هنگام باز و بسته شدن Drawer
+  useEffect(() => {
+    if (drawerOpen) {
+      document.body.style.overflow = "hidden"; // جلوگیری از اسکرول صفحه
+    } else {
+      document.body.style.overflow = "auto"; // بازگرداندن اسکرول
+    }
+
+    return () => {
+      document.body.style.overflow = "auto"; // اطمینان از بازگرداندن اسکرول هنگام unmount
+    };
+  }, [drawerOpen]);
 
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
@@ -79,23 +96,61 @@ const Navbar = () => {
     </>
   );
 
+  const renderDrawerContent = () => (
+    <Box
+      sx={{ width: 250 }}
+      role="presentation"
+      onClick={handleDrawerToggle}
+      onKeyDown={handleDrawerToggle}
+    >
+      <List>
+        <ListItem button component={Link} to="/products">
+          <ListItemText primary={t("products")} />
+        </ListItem>
+        {user ? (
+          <>
+            <ListItem button component={Link} to="/profile">
+              <ListItemText primary={t("profile")} />
+            </ListItem>
+            <ListItem button component={Link} to="/favorites">
+              <ListItemText primary={t("favorites")} />
+            </ListItem>
+            <ListItem button onClick={handleLogout}>
+              <ListItemText primary={t("logout")} />
+            </ListItem>
+          </>
+        ) : (
+          <>
+            <ListItem button component={Link} to="/login">
+              <ListItemText primary={t("login")} />
+            </ListItem>
+            <ListItem button component={Link} to="/register">
+              <ListItemText primary={t("register")} />
+            </ListItem>
+          </>
+        )}
+      </List>
+    </Box>
+  );
+
   return (
     <AppBar
       position="static"
       sx={{
         mb: 2,
-        background: "rgba(0, 0, 0, 0.7)", // شفافیت با رنگ تیره برای بهبود خوانایی
+        background: mode === 'dark'
+          ? "rgba(18, 18, 18, 0.9)"
+          : "rgba(255, 255, 255, 0.7)",
         backdropFilter: "blur(15px)",
-        boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)", // سایه تیره‌تر برای جلوه بیشتر
-        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
         borderRadius: "12px",
         padding: "0.5rem 1rem",
-        color: "#ffffff", // متن سفید برای خوانایی بهتر
+        color: mode === 'dark' ? "#ffffff" : "#000000",
       }}
     >
       <Container maxWidth="lg">
         <Toolbar disableGutters>
-          {/* دکمه باز کردن منو برای صفحه‌های کوچک */}
           <IconButton
             color="inherit"
             aria-label="open drawer"
@@ -106,12 +161,18 @@ const Navbar = () => {
             <MenuIcon />
           </IconButton>
 
-          {/* عنوان اصلی */}
           <Typography
             variant="h6"
             component={Link}
             to="/"
-            sx={{ textDecoration: "none", color: "inherit", flexGrow: 1 }}
+            sx={{
+              textDecoration: "none",
+              color: "inherit",
+              flexGrow: 1,
+              "&:hover": {
+                color: mode === 'dark' ? "#90caf9" : "#1976d2",
+              },
+            }}
           >
             {t("welcome")}
           </Typography>
@@ -125,7 +186,7 @@ const Navbar = () => {
               sx={{
                 "&:hover": {
                   backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  color: "#ff4081", // رنگ صورتی ملایم برای تعاملات
+                  color: mode === 'dark' ? "#ff4081" : "#1976d2",
                 },
               }}
             >
@@ -134,14 +195,13 @@ const Navbar = () => {
 
             {user ? (
               <>
-                {/* دکمه پروفایل با منوی کشویی */}
                 <IconButton
                   color="inherit"
                   onClick={handleProfileMenuClick}
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: "#ff4081",
+                      color: mode === 'dark' ? "#ff4081" : "#1976d2",
                     },
                   }}
                 >
@@ -153,19 +213,38 @@ const Navbar = () => {
                   onClose={handleProfileMenuClose}
                   sx={{
                     "& .MuiPaper-root": {
-                      backgroundColor: "rgba(255, 255, 255, 0.9)",
+                      backgroundColor: mode === 'dark' ? "rgba(28, 28, 28, 0.9)" : "rgba(255, 255, 255, 0.9)",
                       backdropFilter: "blur(10px)",
-                      boxShadow: "0 4px 15px rgba(0, 0, 0, 0.5)", // سایه برای منوی پروفایل
+                      color: mode === 'dark' ? "#ffffff" : "#000000",
+                      boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
+                      borderRadius: "12px",
                     },
                   }}
                 >
-                  <MenuItem onClick={() => handleProfileNavigate("/profile")}>
+                  <MenuItem
+                    onClick={() => handleProfileNavigate("/profile")}
+                    sx={{
+                      color: mode === 'dark' ? "#ffffff" : "#000000",
+                    }}
+                  >
                     Update Profile
                   </MenuItem>
-                  <MenuItem onClick={() => handleProfileNavigate("/favorites")}>
+                  <MenuItem
+                    onClick={() => handleProfileNavigate("/favorites")}
+                    sx={{
+                      color: mode === 'dark' ? "#ffffff" : "#000000",
+                    }}
+                  >
                     Favorite List
                   </MenuItem>
-                  <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                  <MenuItem
+                    onClick={handleLogout}
+                    sx={{
+                      color: mode === 'dark' ? "#ffffff" : "#000000",
+                    }}
+                  >
+                    Logout
+                  </MenuItem>
                 </Menu>
 
                 <IconButton
@@ -175,7 +254,7 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: "#ff4081",
+                      color: mode === 'dark' ? "#ff4081" : "#1976d2",
                     },
                   }}
                 >
@@ -193,7 +272,7 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: "#ff4081",
+                      color: mode === 'dark' ? "#ff4081" : "#1976d2",
                     },
                   }}
                 >
@@ -206,7 +285,7 @@ const Navbar = () => {
                   sx={{
                     "&:hover": {
                       backgroundColor: "rgba(255, 255, 255, 0.2)",
-                      color: "#ff4081",
+                      color: mode === 'dark' ? "#ff4081" : "#1976d2",
                     },
                   }}
                 >
@@ -226,6 +305,11 @@ const Navbar = () => {
           </Box>
         </Toolbar>
       </Container>
+
+      {/* Drawer component for mobile menu */}
+      <Drawer anchor="left" open={drawerOpen} onClose={handleDrawerToggle}>
+        {renderDrawerContent()}
+      </Drawer>
     </AppBar>
   );
 };

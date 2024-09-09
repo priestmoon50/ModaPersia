@@ -1,15 +1,26 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext  } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import "./Login.css";
-import { UserContext } from "./store/UserContext"; // Import UserContext
 import _ from "lodash";
+import { useTheme } from '@mui/material/styles';
+import {
+  Button,
+  TextField,
+  Typography,
+  Box,
+  IconButton,
+  CircularProgress
+} from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { UserContext } from "./store/UserContext"; // Import UserContext
+import { Container } from "@mui/material";
 
 export default function Register() {
+  const theme = useTheme(); // استفاده از تم برای تغییرات استایل
   const navigate = useNavigate();
   const { registerUser } = useContext(UserContext); // Use registerUser from UserContext
   const [nameError, setNameError] = useState(null);
@@ -18,6 +29,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
+  // Yup schema for validation
   const schema = yup.object().shape({
     name: yup
       .string()
@@ -52,6 +64,7 @@ export default function Register() {
   const name = watch("name");
   const email = watch("email");
 
+  // Debounce for checking availability
   useEffect(() => {
     const debouncedCheckAvailability = _.debounce(async (field, value) => {
       setIsCheckingAvailability(true);
@@ -97,7 +110,7 @@ export default function Register() {
         data.password
       );
 
-      // اطمینان حاصل کنید که اطلاعات صحیح JSON.stringify شده باشد
+      // ذخیره اطلاعات کاربر به صورت JSON در localStorage
       localStorage.setItem("userInfo", JSON.stringify(response));
 
       toast.success("Registration successful! Redirecting...");
@@ -109,93 +122,124 @@ export default function Register() {
   };
 
   return (
-    <div className="login-box">
-      <div className="Login">
-        <h2>Register</h2>
-        {Object.keys(errors).length > 0 && (
-          <div className="errors-container">
-            <i className="fas fa-exclamation-triangle icon"></i>
-            <div>
-              {errors.name && <p>{errors.name.message}</p>}
-              {errors.email && <p>{errors.email.message}</p>}
-              {errors.password && <p>{errors.password.message}</p>}
-              {errors.confirmPassword && <p>{errors.confirmPassword.message}</p>}
-              {nameError && <p>{nameError}</p>}
-              {emailError && <p>{emailError}</p>}
-            </div>
-          </div>
-        )}
+    <Container
+      maxWidth="sm"
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundImage: `url(/path/to/your/image.png)`,
+        backgroundSize: 'cover',
+      }}
+    >
+      <Box
+        sx={{
+          width: '100%',
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(28, 28, 28, 0.7)' : 'rgba(255, 255, 255, 0.8)',
+          p: 4,
+          borderRadius: 2,
+          boxShadow: 3,
+          border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <Typography variant="h4" gutterBottom align="center" color={theme.palette.text.primary}>
+          Register
+        </Typography>
+
+        {Object.keys(errors).length > 0 || nameError || emailError ? (
+          <Box
+            sx={{
+              p: 2,
+              bgcolor: theme.palette.error.main,
+              color: theme.palette.error.contrastText,
+              borderRadius: 1,
+              mb: 2,
+            }}
+          >
+            {errors.name && <Typography>{errors.name.message}</Typography>}
+            {errors.email && <Typography>{errors.email.message}</Typography>}
+            {errors.password && <Typography>{errors.password.message}</Typography>}
+            {errors.confirmPassword && <Typography>{errors.confirmPassword.message}</Typography>}
+            {nameError && <Typography>{nameError}</Typography>}
+            {emailError && <Typography>{emailError}</Typography>}
+          </Box>
+        ) : null}
+
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="form-group">
-            <div className="input-container">
-              <i className="fas fa-user icon"></i>
-              <input
-                type="text"
-                {...register("name")}
-                placeholder="Name"
-                className={errors.name || nameError ? "error" : ""}
-                required
-              />
-            </div>
-          </div>
+          <TextField
+            label="Name"
+            {...register("name")}
+            error={!!errors.name || !!nameError}
+            helperText={errors.name?.message || nameError}
+            fullWidth
+            margin="normal"
+            color="primary"
+          />
 
-          <div className="form-group">
-            <div className="input-container">
-              <i className="fas fa-envelope icon"></i>
-              <input
-                type="email"
-                {...register("email")}
-                placeholder="Email"
-                className={errors.email || emailError ? "error" : ""}
-                required
-              />
-            </div>
-          </div>
+          <TextField
+            label="Email"
+            {...register("email")}
+            error={!!errors.email || !!emailError}
+            helperText={errors.email?.message || emailError}
+            fullWidth
+            margin="normal"
+            color="primary"
+          />
 
-          <div className="form-group">
-            <div className="input-container">
-              <i className="fas fa-lock icon"></i>
-              <input
-                type={showPassword ? "text" : "password"}
-                {...register("password")}
-                placeholder="Password"
-                className={errors.password ? "error" : ""}
-                required
-              />
-              <i
-                className={`fas ${
-                  showPassword ? "fa-eye-slash" : "fa-eye"
-                } password-toggle-icon`}
-                onClick={() => setShowPassword(!showPassword)}
-              ></i>
-            </div>
-          </div>
+          <TextField
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            {...register("password")}
+            error={!!errors.password}
+            helperText={errors.password?.message}
+            fullWidth
+            margin="normal"
+            InputProps={{
+              endAdornment: (
+                <IconButton
+                  onClick={() => setShowPassword(!showPassword)}
+                  edge="end"
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              ),
+            }}
+          />
 
-          <div className="form-group">
-            <div className="input-container">
-              <i className="fas fa-lock icon"></i>
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                {...register("confirmPassword")}
-                placeholder="Confirm Password"
-                className={errors.confirmPassword ? "error" : ""}
-                required
-              />
-              <i
-                className={`fas ${
-                  showConfirmPassword ? "fa-eye-slash" : "fa-eye"
-                } password-toggle-icon`}
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              ></i>
-            </div>
-          </div>
+          <TextField
+            label="Confirm Password"
+            type={showConfirmPassword ? "text" : "password"}
+            {...register("confirmPassword")}
+            error={!!errors.confirmPassword}
+            helperText={errors.confirmPassword?.message}
+            fullWidth
+            margin="normal"
+            InputProps={{
+              endAdornment: (
+                <IconButton
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  edge="end"
+                >
+                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              ),
+            }}
+          />
 
-          <button type="submit" disabled={isCheckingAvailability}>
-            {isCheckingAvailability ? "Checking..." : "Register"}
-          </button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            fullWidth
+            disabled={isCheckingAvailability}
+            sx={{ mt: 2 }}
+          >
+            {isCheckingAvailability ? <CircularProgress size={24} /> : "Register"}
+          </Button>
         </form>
-      </div>
+      </Box>
       <ToastContainer />
-    </div>
+    </Container>
   );
 }

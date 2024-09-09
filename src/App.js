@@ -27,6 +27,10 @@ import { AdminProvider } from "./components/store/AdminContext"; // اضافه �
 import Footer from "./components/pages/Footer";
 import FAQ from "./components/pages/FAQ";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import FavoritesPage from "./components/pages/FavoritesPage.jsx";
+
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // تنظیم Stripe با کلید عمومی
 const stripePromise = loadStripe(
@@ -104,6 +108,7 @@ const App = () => {
                         </ProtectedRoute>
                       }
                     />
+                    <Route path="/favorites" element={<FavoritesPage />} />
                     <Route path="/admin/login" element={<AdminLoginPage />} />
                     <Route
                       path="/admin/*"
@@ -117,6 +122,12 @@ const App = () => {
                 </Container>
                 <Footer />
               </Router>
+              {/* اضافه کردن ToastContainer در بیرون از ساختار */}
+              <ToastContainer
+                position="bottom-right"
+                autoClose={3000}
+                hideProgressBar
+              />
             </AdminProvider>
           </CartProvider>
         </ProductProvider>

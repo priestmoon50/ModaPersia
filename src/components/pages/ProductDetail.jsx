@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useState  , useContext } from "react";
+import React, { useReducer, useEffect, useState, useContext } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ProductContext } from "../store/ProductContext";
 import {
@@ -15,7 +15,6 @@ import {
   FormControl,
   Snackbar,
   Alert,
-  Grid,
   Radio,
 } from "@mui/material";
 import { SERVER_URL } from "../../services/productService";
@@ -43,7 +42,7 @@ const reducer = (state, action) => {
       return {
         ...state,
         selectedColor: action.payload.color,
-        mainImage: action.payload.imageUrl,
+        mainImage: action.payload.imageUrl, // تغییر تصویر اصلی بر اساس رنگ انتخابی
       };
     case ACTIONS.SET_MAIN_IMAGE:
       return { ...state, mainImage: action.payload };
@@ -97,7 +96,10 @@ const ProductDetail = () => {
           dispatch({ type: ACTIONS.SET_ERROR, payload: "Product not found" });
         }
       } catch (error) {
-        dispatch({ type: ACTIONS.SET_ERROR, payload: "Error fetching product" });
+        dispatch({
+          type: ACTIONS.SET_ERROR,
+          payload: "Error fetching product",
+        });
       }
     };
 
@@ -110,10 +112,17 @@ const ProductDetail = () => {
 
   const handleColorAndImageChange = (color) => {
     const colorIndex = state.product.colors.indexOf(color);
-    dispatch({
-      type: ACTIONS.SET_SELECTED_COLOR,
-      payload: { color, imageUrl: state.product.images[colorIndex] },
-    });
+
+    if (colorIndex !== -1) {
+      // انتخاب تصویر مربوط به رنگ انتخابی
+      const selectedImage = normalizeImagePath(
+        state.product.images[colorIndex]
+      );
+      dispatch({
+        type: ACTIONS.SET_SELECTED_COLOR,
+        payload: { color, imageUrl: selectedImage }, // تغییر تصویر بر اساس رنگ
+      });
+    }
   };
 
   const handleAddToCart = () => {
@@ -133,11 +142,21 @@ const ProductDetail = () => {
   if (state.error) {
     return (
       <Container maxWidth="md">
-        <Typography color="error" variant="h5" component="h2" align="center" mt={5}>
+        <Typography
+          color="error"
+          variant="h5"
+          component="h2"
+          align="center"
+          mt={5}
+        >
           {state.error}
         </Typography>
         <Box display="flex" justifyContent="center" mt={2}>
-          <Button variant="contained" color="primary" onClick={() => navigate("/products")}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate("/products")}
+          >
             Back to Products
           </Button>
         </Box>
@@ -159,11 +178,16 @@ const ProductDetail = () => {
         <CardMedia
           component="img"
           alt={state.product.name}
-          height="400"
+          height="auto"
           image={state.mainImage}
-          sx={{ objectFit: "contain" }}
-          crossOrigin="anonymous"  // استفاده از CORS anonymous
+          sx={{
+            objectFit: "contain",
+            maxWidth: "100%",
+            maxHeight: { xs: "300px", md: "500px" },
+          }}
+          crossOrigin="anonymous" // استفاده از CORS anonymous
         />
+
         <CardContent>
           <Typography variant="h4" component="h2" gutterBottom>
             {state.product.name}
@@ -171,7 +195,15 @@ const ProductDetail = () => {
           <Typography variant="body1" color="textSecondary" paragraph>
             {state.product.description}
           </Typography>
-          <Typography variant="h5" component="p" sx={{ textDecoration: state.product.discountPrice ? "line-through" : "none" }}>
+          <Typography
+            variant="h5"
+            component="p"
+            sx={{
+              textDecoration: state.product.discountPrice
+                ? "line-through"
+                : "none",
+            }}
+          >
             Price: €{state.product.price.toFixed(2)}
           </Typography>
           {state.product.discountPrice && (
@@ -220,53 +252,43 @@ const ProductDetail = () => {
                     height: 24,
                     borderRadius: "50%",
                     marginRight: 1,
-                    border: state.selectedColor === color ? "2px solid black" : "none",
+                    border:
+                      state.selectedColor === color
+                        ? "2px solid black"
+                        : "none", // دایره فقط برای رنگ انتخاب‌شده
                   }}
                 />
               ))}
             </Box>
           </FormControl>
 
-          <Grid container spacing={1} sx={{ mt: 1 }}>
-            {state.product.images.map((image, index) => (
-              <Grid item key={`image-${index}`} xs={4}>
-                <CardMedia
-                  component="img"
-                  alt={`${state.product.name} - ${index + 1}`}
-                  height="60"
-                  image={normalizeImagePath(image) || "DEFAULT_IMAGE_URL"}
-                  sx={{
-                    objectFit: "contain",
-                    borderRadius: "8px",
-                    border: state.selectedColor === state.product.colors[index] ? "2px solid black" : "none",
-                    cursor: "pointer",
-                    
-                  }}
-                  crossOrigin="anonymous"  // استفاده از CORS anonymous
-                  onClick={() => {
-                    dispatch({
-                      type: ACTIONS.SET_MAIN_IMAGE,
-                      payload: normalizeImagePath(image),
-                    });
-                  }}
-                />
-              </Grid>
-            ))}
-          </Grid>
-
           <Box mt={2}>
             <Button
               variant="contained"
-              color="primary"
+              color="secondary"
               component={Link}
               to="/products"
+              sx={{
+                backgroundColor: "#4a4a4a",
+                color: "#fff",
+                "&:hover": {
+                  backgroundColor: "#39ff14", // تغییر رنگ به سبز در هاور
+                },
+              }}
             >
               Back to Products
             </Button>
             <Button
               variant="contained"
-              color="secondary"
-              sx={{ ml: 2 }}
+              color="primary"
+              sx={{
+                ml: 2,
+                backgroundColor: "#4a4a4a", // رنگ سیمانی
+                color: "#fff",
+                "&:hover": {
+                  backgroundColor: "#39ff14", // تغییر رنگ به سبز در هاور
+                },
+              }}
               onClick={handleAddToCart}
               disabled={!state.selectedSize || !state.selectedColor}
             >

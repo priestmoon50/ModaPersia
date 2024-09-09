@@ -5,22 +5,24 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  background-image: url('./images/background2.png'); /* مسیر تصویر پس‌زمینه */
-  background-size: cover;/* تصویر باید در صفحه قرار گیرد و کاملاً نمایش داده شود */
-  background-position: bottom center; /* موقعیت تصویر پایین و مرکز صفحه */
-  background-attachment: fixed; /* ثابت بودن تصویر در اسکرول */
+  
+  background-color: #f0f0f0; /* رنگ پس‌زمینه در مواقعی که تصویر بارگذاری نمی‌شود */
+  /* background-image: url('./images/background2.png'); مسیر تصویر پس‌زمینه */
+  background-size: cover; /* تصویر باید به‌صورت کامل در صفحه نمایش داده شود */
+  background-position: center center; /* تنظیم موقعیت تصویر در مرکز صفحه */
+  background-attachment: fixed; /* تصویر ثابت در پس‌زمینه باقی بماند */
   background-repeat: no-repeat; /* عدم تکرار تصویر */
+  
   min-height: 100vh; /* پوشش کامل صفحه */
   padding-bottom: 200px; /* اضافه کردن فاصله برای محصولات */
+  scroll-behavior: smooth; /* اسکرول نرم */
+  overflow-x: hidden; /* جلوگیری از اسکرول افقی */
 }
 
 #main-content {
   padding-bottom: 100px; /* اضافه کردن فاصله به انتهای محتوا */
 }
 
-
-/* تنظیمات برای کد‌های موجود در سایت */
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
@@ -30,4 +32,19 @@ code {
   color: #f8f8f8; /* رنگ متن کد */
 }
 
-/* سایر استایل‌های دلخواه */
+/* بهینه‌سازی ریسپانسیو برای دستگاه‌های کوچک */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 100px; /* کاهش فاصله در دستگاه‌های کوچک */
+    background-position: top center; /* تنظیم تصویر برای دستگاه‌های کوچک */
+    background-attachment: scroll; /* در دستگاه‌های کوچک، تصویر با اسکرول حرکت کند */
+  }
+
+  #main-content {
+    padding-bottom: 50px; /* کاهش فاصله انتهایی محتوا در موبایل */
+  }
+
+  code {
+    font-size: 0.85em; /* کوچک‌تر کردن فونت کدها در دستگاه‌های کوچک */
+  }
+}

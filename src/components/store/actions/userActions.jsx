@@ -130,9 +130,9 @@ export const updateProfile = async (userData, dispatch, navigate) => {
 };
 
 // Logout User
-export const logout = (dispatch, navigate) => {
+export const logout = (dispatch) => {
   clearUserInfoFromStorage();
   dispatch({ type: USER_LOGOUT });
 
-  navigate("/");
+  window.location.href = "/";
 };

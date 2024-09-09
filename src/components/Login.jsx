@@ -5,14 +5,27 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import "./Login.css";
+import { useTheme } from '@mui/material/styles';
+
+import {
+  Button,
+  Checkbox,
+  TextField,
+  Typography,
+  Container,
+  Box,
+  IconButton,
+  CircularProgress,
+} from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import ForgetPassword from "./ForgetPassword";
 import { UserContext } from "./store/UserContext";
 
 export default function Login() {
+  const theme = useTheme(); // دسترسی به تم
   const navigate = useNavigate();
-  const { state, loginUser, logoutUser, verifyToken } = useContext(UserContext); // Add verifyToken function from context
-  const { userLogin } = state; // Get userLogin state from UserContext
+  const { state, loginUser, logoutUser, verifyToken } = useContext(UserContext);
+  const { userLogin } = state;
   const user = userLogin?.userInfo;
   const isLoggedIn = !!user;
 
@@ -23,8 +36,8 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
 
   const schema = yup.object().shape({
-    username: yup.string().required("نام کاربری ضروری است"),
-    password: yup.string().required("رمز عبور ضروری است"),
+    username: yup.string().required("Username is required"),
+    password: yup.string().required("Password is required"),
   });
 
   const {
@@ -36,22 +49,22 @@ export default function Login() {
     resolver: yupResolver(schema),
   });
 
-  // اعتبارسنجی توکن در هنگام بارگذاری صفحه
+  // Token validation on page load
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (token) {
       const checkTokenValidity = async () => {
         try {
-          const isValid = await verifyToken(token); // بررسی اعتبار توکن
+          const isValid = await verifyToken(token);
           if (!isValid) {
-            logoutUser(); // اگر توکن معتبر نباشد، کاربر از سیستم خارج شود
-            toast.error("نشست شما منقضی شده است. لطفاً مجدداً وارد شوید.");
+            logoutUser();
+            toast.error("Your session has expired. Please log in again.");
             navigate("/login");
           }
         } catch (error) {
-          console.error("خطا در اعتبارسنجی توکن:", error);
+          console.error("Error validating token:", error);
           logoutUser();
-          toast.error("خطا در اعتبارسنجی توکن. لطفاً دوباره وارد شوید.");
+          toast.error("Error validating token. Please log in again.");
           navigate("/login");
         }
       };
@@ -76,7 +89,7 @@ export default function Login() {
       const response = await loginUser(data.username, data.password);
 
       if (response && response.token) {
-        localStorage.setItem("authToken", response.token); // ذخیره توکن در localStorage
+        localStorage.setItem("authToken", response.token);
       }
 
       if (rememberMe) {
@@ -89,9 +102,9 @@ export default function Login() {
 
       navigate("/profile");
     } catch (error) {
-      console.error("خطا در ورود:", error);
+      console.error("Login error:", error);
       const errorMessage =
-        error.response?.data?.message || "نام کاربری یا رمز عبور اشتباه است";
+        error.response?.data?.message || "Invalid username or password";
       setLoginError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -101,92 +114,120 @@ export default function Login() {
 
   const handleLogout = () => {
     logoutUser();
-    toast.success("با موفقیت خارج شدید.");
+    toast.success("Successfully logged out.");
   };
 
   return (
-    <div className="login-box">
-      {isLoading && <div className="loading-spinner">در حال بارگذاری...</div>}
-      <div className="Login">
-        <h2>ورود</h2>
+    <Container
+      maxWidth="sm"
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundImage: `url(/path/to/your/image.png)`,
+        backgroundSize: 'cover',
+      }}
+    >
+      <Box
+        sx={{
+          width: '100%',
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(28, 28, 28, 0.7)' : 'rgba(255, 255, 255, 0.8)',
+          p: 4,
+          borderRadius: 2,
+          boxShadow: 3,
+          border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        {isLoading && <CircularProgress />}
+        <Typography variant="h4" gutterBottom align="center" color={theme.palette.text.primary}>
+          Login
+        </Typography>
+
         {isLoggedIn ? (
-          <div>
-            <p>شما با نام {user?.username} وارد شده‌اید. لطفا ابتدا خارج شوید.</p>
-            <button onClick={handleLogout} className="gaming-button">
-              خروج
-            </button>
-          </div>
+          <Box>
+            <Typography variant="body1" color={theme.palette.text.primary}>
+              You are logged in as {user?.username}. Please log out first.
+            </Typography>
+            <Button onClick={handleLogout} variant="contained" sx={{ mt: 2 }}>
+              Logout
+            </Button>
+          </Box>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="form-group">
-              <div className="input-container">
-                <i className="fas fa-user icon"></i>
-                <input
-                  type="text"
-                  {...register("username")}
-                  placeholder="نام کاربری"
-                  className={errors.username ? "error" : ""}
-                />
-                {errors.username && <p>{errors.username.message}</p>}
-              </div>
-            </div>
+            <TextField
+              label="Username"
+              {...register("username")}
+              error={!!errors.username}
+              helperText={errors.username?.message}
+              fullWidth
+              margin="normal"
+              color="primary"
+            />
 
-            <div className="form-group">
-              <div className="input-container">
-                <i className="fas fa-lock icon"></i>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  {...register("password")}
-                  placeholder="رمز عبور"
-                  className={errors.password ? "error" : ""}
-                />
-                <i
-                  className={`fas ${
-                    showPassword ? "fa-eye-slash" : "fa-eye"
-                  } password-toggle-icon`}
-                  onClick={() => setShowPassword(!showPassword)}
-                ></i>
-                {errors.password && <p>{errors.password.message}</p>}
-              </div>
-            </div>
+            <TextField
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              {...register("password")}
+              error={!!errors.password}
+              helperText={errors.password?.message}
+              fullWidth
+              margin="normal"
+              InputProps={{
+                endAdornment: (
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                ),
+              }}
+            />
 
-            <div className="form-group remember-me">
-              <input
-                type="checkbox"
-                id="rememberMe"
+            <Box display="flex" alignItems="center" mb={2}>
+              <Checkbox
                 checked={rememberMe}
                 onChange={() => setRememberMe(!rememberMe)}
               />
-              <label htmlFor="rememberMe">مرا به خاطر بسپار</label>
-            </div>
+              <Typography variant="body2" color={theme.palette.text.secondary}>
+                Remember me
+              </Typography>
+            </Box>
 
-            <button type="submit" className="gaming-button">
-              ورود
-            </button>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{ mb: 2 }}
+            >
+              Login
+            </Button>
 
-            <div className="button-group">
-              <button
-                type="button"
-                className="gaming-button register-button"
-                onClick={() => navigate("/Register")}
-              >
-                ثبت‌نام
-              </button>
-              <button
-                type="button"
-                className="gaming-button forget-password-button"
-                onClick={() => setShowForgetPassword(true)}
-              >
-                فراموشی رمز عبور؟
-              </button>
-            </div>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => navigate("/Register")}
+            >
+              Register
+            </Button>
+
+            <Button
+              variant="text"
+              fullWidth
+              onClick={() => setShowForgetPassword(true)}
+              sx={{ mt: 1 }}
+            >
+              Forgot Password?
+            </Button>
           </form>
         )}
-      </div>
+      </Box>
 
       {showForgetPassword && <ForgetPassword />}
       <ToastContainer />
-      {loginError && <p className="error">{loginError}</p>}
-    </div>
+      {loginError && <Typography color="error">{loginError}</Typography>}
+    </Container>
   );
 }

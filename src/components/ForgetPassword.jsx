@@ -4,10 +4,13 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import "./Login.css"; // فرض می‌کنیم استایل‌ها در همین فایل قرار دارند
+import { useTheme } from '@mui/material/styles';
+import { Button, TextField, Typography, Box, CircularProgress } from "@mui/material";
 
 export default function ForgetPassword() {
+  const theme = useTheme(); // استفاده از تم برای تغییرات استایل
   const [emailSent, setEmailSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const schema = yup.object().shape({
     email: yup.string().email("ایمیل معتبر نیست").required("ایمیل ضروری است"),
@@ -18,6 +21,7 @@ export default function ForgetPassword() {
   });
 
   const onSubmit = async (data) => {
+    setIsLoading(true);
     try {
       const response = await fetch("http://localhost:3001/forget-password", {
         method: "POST",
@@ -38,33 +42,66 @@ export default function ForgetPassword() {
     } catch (error) {
       console.error("Forget password error:", error);
       toast.error(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="forget-password-box">
-      <h2>فراموشی رمز عبور</h2>
-      {emailSent ? (
-        <p>لطفاً ایمیل خود را بررسی کنید</p>
-      ) : (
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="form-group">
-            <div className="input-container">
-              <i className="fas fa-envelope icon"></i>
-              <input
-                type="email"
-                {...register("email")}
-                placeholder="ایمیل"
-                className={errors.email ? "error" : ""}
-                required
-              />
-              {errors.email && <p>{errors.email.message}</p>}
-            </div>
-          </div>
-          <button type="submit" className="gaming-button">ارسال</button>
-        </form>
-      )}
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: theme.palette.mode === 'dark' ? 'rgba(28, 28, 28, 0.7)' : 'rgba(255, 255, 255, 0.8)',
+        p: 4,
+        borderRadius: 2,
+        boxShadow: 3,
+        maxWidth: '400px',
+        margin: 'auto'
+      }}
+    >
+      <Box sx={{ width: '100%' }}>
+        <Typography variant="h4" gutterBottom align="center" color={theme.palette.text.primary}>
+          فراموشی رمز عبور
+        </Typography>
+
+        {emailSent ? (
+          <Typography variant="body1" align="center" color={theme.palette.text.primary}>
+            لطفاً ایمیل خود را بررسی کنید
+          </Typography>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <TextField
+              label="ایمیل"
+              {...register("email")}
+              error={!!errors.email}
+              helperText={errors.email?.message}
+              fullWidth
+              margin="normal"
+              color="primary"
+              InputLabelProps={{
+                style: { direction: 'rtl' }
+              }}
+              sx={{ direction: 'rtl' }}
+            />
+
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{ mt: 2 }}
+              disabled={isLoading}
+            >
+              {isLoading ? <CircularProgress size={24} /> : "ارسال"}
+            </Button>
+          </form>
+        )}
+      </Box>
+
       <ToastContainer />
-    </div>
+    </Box>
   );
 }
