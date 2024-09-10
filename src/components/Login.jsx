@@ -5,8 +5,7 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useTheme } from '@mui/material/styles';
-
+import { useTheme } from "@mui/material/styles";
 import {
   Button,
   Checkbox,
@@ -29,11 +28,12 @@ export default function Login() {
   const user = userLogin?.userInfo;
   const isLoggedIn = !!user;
 
-  const [loginError, setLoginError] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [showForgetPassword, setShowForgetPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  // استفاده از یک شیء برای مدیریت حالت‌ها
+  const [loginState, setLoginState] = useState({
+    showPassword: false,
+    rememberMe: false,
+    showForgetPassword: false,
+  });
 
   const schema = yup.object().shape({
     username: yup.string().required("Username is required"),
@@ -43,13 +43,13 @@ export default function Login() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     setValue,
   } = useForm({
     resolver: yupResolver(schema),
   });
 
-  // Token validation on page load
+  // اعتبارسنجی توکن در بارگذاری صفحه
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (token) {
@@ -72,49 +72,44 @@ export default function Login() {
     }
   }, [navigate, logoutUser, verifyToken]);
 
+  // بارگذاری اطلاعات ذخیره‌شده در حافظه
   useEffect(() => {
     const savedUsername = localStorage.getItem("savedUsername");
     const savedPassword = localStorage.getItem("savedPassword");
     if (savedUsername && savedPassword) {
       setValue("username", savedUsername);
       setValue("password", savedPassword);
-      setRememberMe(true);
+      setLoginState((prevState) => ({
+        ...prevState,
+        rememberMe: true,
+      }));
     }
   }, [setValue]);
 
   const onSubmit = async (data) => {
-    setIsLoading(true);
-  
     try {
       const response = await loginUser(data.username, data.password);
-      console.log(response.token); 
       if (response && response.token) {
-
         localStorage.setItem("authToken", response.token);
-  
-
       }
-  
-      if (rememberMe) {
+
+      if (loginState.rememberMe) {
         localStorage.setItem("savedUsername", data.username);
         localStorage.setItem("savedPassword", data.password);
       } else {
         localStorage.removeItem("savedUsername");
         localStorage.removeItem("savedPassword");
       }
-  
-      navigate("/profile");
+
+      // جلوگیری از بازگشت به صفحه ورود
+      navigate("/profile", { replace: true });
     } catch (error) {
       console.error("Login error:", error);
       const errorMessage =
         error.response?.data?.message || "Invalid username or password";
-      setLoginError(errorMessage);
       toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
     }
   };
-  
 
   const handleLogout = () => {
     logoutUser();
@@ -125,26 +120,37 @@ export default function Login() {
     <Container
       maxWidth="sm"
       sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
         backgroundImage: `url(/path/to/your/image.png)`,
-        backgroundSize: 'cover',
+        backgroundSize: "cover",
       }}
     >
       <Box
         sx={{
-          width: '100%',
-          bgcolor: theme.palette.mode === 'dark' ? 'rgba(28, 28, 28, 0.7)' : 'rgba(255, 255, 255, 0.8)',
+          width: "100%",
+          bgcolor:
+            theme.palette.mode === "dark"
+              ? "rgba(28, 28, 28, 0.7)"
+              : "rgba(255, 255, 255, 0.8)",
           p: 4,
           borderRadius: 2,
           boxShadow: 3,
-          border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.1)',
+          border:
+            theme.palette.mode === "dark"
+              ? "1px solid rgba(255, 255, 255, 0.2)"
+              : "1px solid rgba(0, 0, 0, 0.1)",
         }}
       >
-        {isLoading && <CircularProgress />}
-        <Typography variant="h4" gutterBottom align="center" color={theme.palette.text.primary}>
+        {isSubmitting && <CircularProgress />}
+        <Typography
+          variant="h4"
+          gutterBottom
+          align="center"
+          color={theme.palette.text.primary}
+        >
           Login
         </Typography>
 
@@ -171,7 +177,7 @@ export default function Login() {
 
             <TextField
               label="Password"
-              type={showPassword ? "text" : "password"}
+              type={loginState.showPassword ? "text" : "password"}
               {...register("password")}
               error={!!errors.password}
               helperText={errors.password?.message}
@@ -180,10 +186,15 @@ export default function Login() {
               InputProps={{
                 endAdornment: (
                   <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={() =>
+                      setLoginState((prevState) => ({
+                        ...prevState,
+                        showPassword: !prevState.showPassword,
+                      }))
+                    }
                     edge="end"
                   >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                    {loginState.showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
                 ),
               }}
@@ -191,8 +202,13 @@ export default function Login() {
 
             <Box display="flex" alignItems="center" mb={2}>
               <Checkbox
-                checked={rememberMe}
-                onChange={() => setRememberMe(!rememberMe)}
+                checked={loginState.rememberMe}
+                onChange={() =>
+                  setLoginState((prevState) => ({
+                    ...prevState,
+                    rememberMe: !prevState.rememberMe,
+                  }))
+                }
               />
               <Typography variant="body2" color={theme.palette.text.secondary}>
                 Remember me
@@ -205,6 +221,7 @@ export default function Login() {
               color="primary"
               fullWidth
               sx={{ mb: 2 }}
+              disabled={isSubmitting}
             >
               Login
             </Button>
@@ -220,7 +237,12 @@ export default function Login() {
             <Button
               variant="text"
               fullWidth
-              onClick={() => setShowForgetPassword(true)}
+              onClick={() =>
+                setLoginState((prevState) => ({
+                  ...prevState,
+                  showForgetPassword: true,
+                }))
+              }
               sx={{ mt: 1 }}
             >
               Forgot Password?
@@ -229,9 +251,8 @@ export default function Login() {
         )}
       </Box>
 
-      {showForgetPassword && <ForgetPassword />}
+      {loginState.showForgetPassword && <ForgetPassword />}
       <ToastContainer />
-      {loginError && <Typography color="error">{loginError}</Typography>}
     </Container>
   );
 }
