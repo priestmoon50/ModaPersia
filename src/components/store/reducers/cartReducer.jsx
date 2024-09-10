@@ -28,10 +28,10 @@ export const cartReducer = (state, action) => {
             ? { ...x, quantity: x.quantity + item.quantity }
             : x
         );
-      } else {
+      } else { 
         updatedCartItems = [...state.cartItems, item];
       }
-
+  
       // ذخیره‌سازی سبد خرید به‌روزرسانی‌شده در localStorage
       saveCartToLocalStorage(updatedCartItems);
 

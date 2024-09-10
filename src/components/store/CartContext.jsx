@@ -1,11 +1,16 @@
-import React, { createContext, useReducer, useEffect } from "react";
+import React, { createContext, useReducer, useEffect, useContext } from "react";
+import { UserContext } from "./UserContext"; // برای دسترسی به وضعیت کاربر
+import {
+  addCartItem as addCartItemAction,
+  removeCartItem as removeCartItemAction,
+  clearCart as clearCartAction,
+} from "./actions/cartActions"; // اکشن‌های همگام‌سازی با سرور
 import {
   ADD_TO_CART,
   REMOVE_FROM_CART,
   SET_ERROR,
   CLEAR_CART,
   LOAD_CART_FROM_STORAGE,
-  
 } from "./constants/cartConstants";
 
 const CartContext = createContext();
@@ -72,6 +77,7 @@ const cartReducer = (state, action) => {
 
 export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const { state: userState } = useContext(UserContext); // دسترسی به وضعیت کاربر
 
   // Load cart from localStorage on initial load
   useEffect(() => {
@@ -84,21 +90,57 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
   }, [state.cartItems]);
 
-  const addCartItem = (item) => {
+  // Add item to cart
+  const addCartItem = async (item) => {
     if (!item.productId || !item.name || !item.price) {
-      dispatch({ type: "SET_ERROR", payload: "Invalid product details" });
+      dispatch({ type: SET_ERROR, payload: "Invalid product details" });
       return;
     }
+
+    // Dispatch کردن تغییرات به صورت محلی
     dispatch({ type: ADD_TO_CART, payload: item });
+
+    // ارسال سبد خرید به سرور در صورت موجود بودن توکن کاربر
+    if (userState.userLogin.userInfo?.token) {
+      try {
+        await addCartItemAction(dispatch, item, userState.userLogin.userInfo.token);
+      } catch (error) {
+        console.error("Error syncing cart with server:", error);
+        dispatch({ type: SET_ERROR, payload: "Failed to sync cart with server" });
+      }
+    }
   };
 
-  const removeCartItem = (item) => {
-    dispatch({ type: "REMOVE_FROM_CART", payload: item });
+  // Remove item from cart
+  const removeCartItem = async (item) => {
+    // Dispatch کردن تغییرات به صورت محلی
+    dispatch({ type: REMOVE_FROM_CART, payload: item });
+
+    // ارسال سبد خرید به سرور در صورت موجود بودن توکن کاربر
+    if (userState.userLogin.userInfo?.token) {
+      try {
+        await removeCartItemAction(dispatch, item, userState.userLogin.userInfo.token);
+      } catch (error) {
+        console.error("Error removing item from cart on server:", error);
+        dispatch({ type: SET_ERROR, payload: "Failed to remove item from server" });
+      }
+    }
   };
 
-  const clearCart = () => {
-    dispatch({ type: "CLEAR_CART" });
-    localStorage.removeItem("cartItems"); // پاک کردن سبد خرید از localStorage
+  // Clear cart
+  const clearCart = async () => {
+    // Dispatch کردن تغییرات به صورت محلی
+    dispatch({ type: CLEAR_CART });
+
+    // پاک کردن سبد خرید از سرور در صورت موجود بودن توکن کاربر
+    if (userState.userLogin.userInfo?.token) {
+      try {
+        await clearCartAction(dispatch, userState.userLogin.userInfo.token);
+      } catch (error) {
+        console.error("Error clearing cart on server:", error);
+        dispatch({ type: SET_ERROR, payload: "Failed to clear cart on server" });
+      }
+    }
   };
 
   return (
