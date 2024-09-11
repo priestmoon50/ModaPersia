@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useCallback } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Grid,
   Container,
@@ -7,27 +7,27 @@ import {
   Typography,
   Snackbar,
   Alert,
-  TextField, // برای بخش جستجو
+  TextField,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../store/UserContext";
 import { ProductContext } from "../store/ProductContext";
 import CartContext from "../store/CartContext";
 import ProductCard from "./ProductCard";
-import ProductFormDialog from "./ProductFormDialog"; // فرم دیالوگ به عنوان یک کامپوننت جداگانه
+import ProductFormDialog from "./ProductFormDialog";
 
 const ProductPage = () => {
   const { state: userContextState } = useContext(UserContext);
   const { state: productContextState, fetchProducts, updateProduct, deleteProduct, addProduct } = useContext(ProductContext);
+  const { addCartItem } = useContext(CartContext);
 
   const { userInfo } = userContextState?.userLogin || {};
   const { products = [], loading, error } = productContextState.productList || {};
-  const { addCartItem } = useContext(CartContext);
-  
+
   // State برای دسته‌بندی و جستجو
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const [open, setOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -36,19 +36,20 @@ const ProductPage = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const navigate = useNavigate();
 
-  const fetchProductsMemoized = useCallback(() => {
+  useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
 
-  useEffect(() => {
-    fetchProductsMemoized();
-  }, [fetchProductsMemoized]);
+  const handleAddToCart = async (item) => {
+    try {
+      await addCartItem(item);
+      handleSnackbarOpen("Product added to cart successfully");
+    } catch (error) {
+      console.error("Failed to add product to cart:", error);
+      handleSnackbarOpen("Failed to add product to cart", "error");
+    }
+  };
 
-  const handleAddToCart = useCallback((item) => {
-    console.log("Item added to cart:", item);
-    addCartItem(item); // اطمینان حاصل کنید که addCartItem در context استفاده می‌شود
-  }, [addCartItem]);
-  
   // فیلتر محصولات بر اساس دسته‌بندی و جستجو
   const filteredProducts = products.filter(product => {
     const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
@@ -56,86 +57,77 @@ const ProductPage = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const handleEdit = useCallback(
-    (product) => {
-      setEditingProduct(product);
-      setOpen(true);
-    },
-    []
-  );
+  const handleEdit = (product) => {
+    setEditingProduct(product);
+    setOpen(true);
+  };
 
-  const handleClose = useCallback(() => {
+  const handleClose = () => {
     setOpen(false);
     setEditingProduct(null);
-  }, []);
+  };
 
-  const handleSnackbarOpen = useCallback((message, severity = "success") => {
+  const handleSnackbarOpen = (message, severity = "success") => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
-  }, []);
+  };
 
-  const handleSave = useCallback(
-    async (data) => {
-      setLoadingSave(true);
-      try {
-        const formData = new FormData();
-        formData.append("name", data.name);
-        formData.append("description", data.description);
-        formData.append("price", data.price);
-        formData.append("discountPercentage", data.discountPercentage || 0);
-        formData.append("sizes", JSON.stringify(data.sizes));
-        formData.append("colors", JSON.stringify(data.colors));
-  
-        if (data.images && data.images.length > 0) {
-          Array.from(data.images).forEach((file) =>
-            formData.append("images", file)
-          );
-        }
-  
-        if (editingProduct) {
-          await updateProduct(editingProduct._id, formData);
-          handleSnackbarOpen("Product updated successfully");
-        } else {
-          await addProduct(formData);
-          handleSnackbarOpen("Product added successfully");
-          navigate("/admin/products");
-        }
-        handleClose();
-      } catch (error) {
-        handleSnackbarOpen(
-          editingProduct ? "Failed to update product" : "Failed to add product",
-          "error"
+  const handleSave = async (data) => {
+    setLoadingSave(true);
+    try {
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("description", data.description);
+      formData.append("price", data.price);
+      formData.append("discountPercentage", data.discountPercentage || 0);
+      formData.append("sizes", JSON.stringify(data.sizes));
+      formData.append("colors", JSON.stringify(data.colors));
+
+      if (data.images && data.images.length > 0) {
+        Array.from(data.images).forEach((file) =>
+          formData.append("images", file)
         );
-      } finally {
-        setLoadingSave(false);
       }
-    },
-    [editingProduct, updateProduct, addProduct, handleSnackbarOpen, handleClose, navigate]
-  );
-  
 
-  const handleDelete = useCallback(
-    async (id) => {
-      try {
-        await deleteProduct(id);
-        handleSnackbarOpen("Product deleted successfully");
-      } catch (error) {
-        handleSnackbarOpen("Failed to delete product", "error");
+      if (editingProduct) {
+        await updateProduct(editingProduct._id, formData);
+        handleSnackbarOpen("Product updated successfully");
+      } else {
+        await addProduct(formData);
+        handleSnackbarOpen("Product added successfully");
+        navigate("/admin/products");
       }
-    },
-    [deleteProduct, handleSnackbarOpen]
-  );
+      handleClose();
+    } catch (error) {
+      handleSnackbarOpen(editingProduct ? "Failed to update product" : "Failed to add product", "error");
+    } finally {
+      setLoadingSave(false);
+    }
+  };
 
-  const handleAddNewProduct = useCallback(() => {
-    setEditingProduct(null);
-    setOpen(true);
-    navigate("/admin/add-product");
-  }, [navigate]);
+  const handleDelete = async (id) => {
+    try {
+      await deleteProduct(id);
+      handleSnackbarOpen("Product deleted successfully");
+    } catch (error) {
+      handleSnackbarOpen("Failed to delete product", "error");
+    }
+  };
 
-  const handleSnackbarClose = useCallback(() => {
+  const handleAddNewProduct = () => {
+    if (userInfo && userInfo.isAdmin) {
+      setEditingProduct(null);
+      setOpen(true);
+      navigate("/admin/add-product");
+    } else {
+      handleSnackbarOpen("You do not have permission to add products", "error");
+    }
+  };
+
+  const handleSnackbarClose = () => {
     setSnackbarOpen(false);
-  }, []);
+  };
 
   if (loading) {
     return <Typography variant="h5">Loading...</Typography>;
@@ -211,7 +203,7 @@ const ProductPage = () => {
             onClick={handleAddNewProduct}
             sx={{
               padding: "12px 24px",
-              fontSize: "1.1rem", // افزایش سایز فونت دکمه‌ها
+              fontSize: "1.1rem",
               fontWeight: "bold",
             }}
           >
@@ -229,7 +221,7 @@ const ProductPage = () => {
             sm={6}
             md={4}
             lg={3}
-            sx={{ transition: "transform 0.3s ease"  }} 
+            sx={{ transition: "transform 0.3s ease" }}
           >
             <ProductCard
               product={product}

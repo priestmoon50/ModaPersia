@@ -4,6 +4,8 @@ import {
   SET_ERROR,
   CLEAR_CART,
   LOAD_CART_FROM_STORAGE,
+  CART_LOADING,
+  CART_SUCCESS,
 } from "../constants/cartConstants";
 
 // Utility function برای ذخیره‌سازی سبد خرید در localStorage
@@ -26,19 +28,21 @@ const clearCartFromLocalStorage = () => {
 
 export const cartReducer = (state, action) => {
   switch (action.type) {
-    case "CART_LOADING":
+    case CART_LOADING:
       return {
         ...state,
         isLoading: true,
         error: null,
       };
 
-    case "CART_SUCCESS":
+    case CART_SUCCESS:
       return {
         ...state,
         isLoading: false,
         success: true,
+        error: null,
       };
+
     case ADD_TO_CART: {
       const item = action.payload;
       const existingItem = state.cartItems.find(
@@ -62,18 +66,32 @@ export const cartReducer = (state, action) => {
         updatedCartItems = [...state.cartItems, item];
       }
 
-      // ذخیره‌سازی سبد خرید به‌روزرسانی‌شده در localStorage
       saveCartToLocalStorage(updatedCartItems);
 
       return {
         ...state,
         cartItems: updatedCartItems,
-        isLoading: false,  // متوقف کردن لودینگ
-        success: true,     // به‌روزرسانی موفقیت
+        isLoading: false,
+        success: true,
+        error: null,
       };
     }
 
     case REMOVE_FROM_CART: {
+      const existingItem = state.cartItems.find(
+        (x) =>
+          x.productId === action.payload.productId &&
+          x.size === action.payload.size &&
+          x.color === action.payload.color
+      );
+
+      if (!existingItem) {
+        return {
+          ...state,
+          error: "Item not found in cart",
+        };
+      }
+
       const filteredCartItems = state.cartItems.filter(
         (x) =>
           x.productId !== action.payload.productId ||
@@ -81,12 +99,12 @@ export const cartReducer = (state, action) => {
           x.color !== action.payload.color
       );
 
-      // ذخیره‌سازی سبد خرید به‌روزرسانی‌شده در localStorage
       saveCartToLocalStorage(filteredCartItems);
 
       return {
         ...state,
         cartItems: filteredCartItems,
+        error: null,
       };
     }
 
@@ -94,14 +112,22 @@ export const cartReducer = (state, action) => {
       return { ...state, error: action.payload };
 
     case CLEAR_CART:
-      // پاک کردن سبد خرید از localStorage
       clearCartFromLocalStorage();
-      return { ...state, cartItems: [] };
+      return {
+        ...state,
+        cartItems: [],
+        isLoading: false,
+        success: true,
+        error: null,
+      };
 
     case LOAD_CART_FROM_STORAGE:
       return {
         ...state,
         cartItems: action.payload || [],
+        isLoading: false,
+        success: true,
+        error: null,
       };
 
     default:

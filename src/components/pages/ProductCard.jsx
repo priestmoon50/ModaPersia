@@ -59,11 +59,11 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
   const { control, handleSubmit } = useForm();
   const { addCartItem, error, isLoading } = useContext(CartContext);
   const theme = useTheme();
+
+  // استفاده از useMemo برای بهینه‌سازی
   const sizes = useMemo(() => product.sizes || [], [product.sizes]);
   const colors = useMemo(() => product.colors || [], [product.colors]);
-  const images = useMemo(() => product.images.map(normalizeImagePath) || [], [
-    product.images,
-  ]);
+  const images = useMemo(() => product.images.map(normalizeImagePath), [product.images]);
 
   useEffect(() => {
     if (colors.length > 0) {
@@ -85,29 +85,25 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
   }, [colors, images, sizes]);
 
   const onSubmit = async (data) => {
-    // Check if color and size are selected
     if (!state.selectedColor || !data.selectedSize) {
       toast.error("Please select both color and size.");
       return;
     }
 
-    // Ensure the product is valid and in stock
     if (product.stock <= 0) {
       toast.error("This product is out of stock.");
       return;
     }
 
-    // Create the cart item object with quantity set to 1
     const cartItem = {
-      productId: product._id, // Ensure a valid MongoDB ObjectId
+      productId: product._id,
       name: product.name,
-      price: product.discountPrice || product.price, // Use discount price if available
-      quantity: 1, // Quantity is always 1 when added to cart
+      price: product.discountPrice || product.price,
+      quantity: 1,
       color: state.selectedColor,
       size: data.selectedSize,
     };
 
-    // Try to add the item to the cart
     try {
       await addCartItem(cartItem);
       toast.success("Product successfully added to cart!");
@@ -154,7 +150,7 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
           transition: "transform 0.3s ease",
           marginTop: "16px",
           "&:hover": {
-            transform: "none",
+            transform: "scale(1.05)",
           },
         }}
         crossOrigin="anonymous"
@@ -196,7 +192,6 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
           {product.description}
         </Typography>
 
-        {/* نمایش قیمت اصلی و قیمت تخفیف خورده */}
         {product.discountPrice ? (
           <>
             <Typography
@@ -247,8 +242,8 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
         <form onSubmit={handleSubmit(onSubmit)}>
           <FormControl
             sx={{
-              minWidth: "100px", // حداقل عرض برای کوچک‌تر کردن Select box
-              marginBottom: "8px", // فاصله از بخش‌های دیگر
+              minWidth: "100px",
+              marginBottom: "8px",
             }}
           >
             <Controller
@@ -268,11 +263,11 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
                     });
                   }}
                   sx={{
-                    padding: "4px", // کوچک کردن padding داخلی
-                    fontSize: "0.8rem", // کوچک‌تر کردن اندازه فونت
-                    height: "30px", // کاهش ارتفاع
-                    minWidth: "100px", // حداقل عرض فیلد
-                    borderRadius: "4px", // کمی گرد کردن گوشه‌ها برای ظاهر شیک‌تر
+                    padding: "4px",
+                    fontSize: "0.8rem",
+                    height: "30px",
+                    minWidth: "100px",
+                    borderRadius: "4px",
                   }}
                 >
                   <MenuItem value="" disabled>

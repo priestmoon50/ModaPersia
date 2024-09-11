@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Container,
@@ -12,10 +12,9 @@ import {
 } from "@mui/material";
 import CartContext from "./store/CartContext";
 
-// Component: نمایش هر آیتم در سبد خرید
 const CartItem = ({ item, onRemove }) => {
   const calculatePrice = (item) => {
-    const price = Number(item.discountPrice || item.price) || 0; // استفاده از قیمت تخفیف در صورت وجود
+    const price = Number(item.discountPrice || item.price) || 0;
     const quantity = Number(item.quantity) || 1;
     return (price * quantity).toFixed(2);
   };
@@ -39,7 +38,6 @@ const CartItem = ({ item, onRemove }) => {
   );
 };
 
-// Component: نمایش جمع کل قیمت‌ها و تخفیف‌ها
 const CartSummary = ({ total, discountTotal }) => {
   return (
     <Box mt={2}>
@@ -53,7 +51,6 @@ const CartSummary = ({ total, discountTotal }) => {
   );
 };
 
-// Component: کنترل‌های سبد خرید (دکمه‌های Checkout و غیره)
 const CartControls = () => {
   return (
     <Box mt={2}>
@@ -70,29 +67,27 @@ const CartControls = () => {
   );
 };
 
-// Main Cart Component: ترکیب همه بخش‌ها
 const Cart = () => {
-  const { cartItems, removeCartItem, error } = useContext(CartContext);
+  const { cartItems, removeCartItem, error, isLoading, clearError } = useContext(CartContext);
 
-  // محاسبه مجموع قیمت کل آیتم‌های سبد خرید (شامل تخفیف‌ها)
   const calculateTotal = useMemo(() => {
     return cartItems
       .reduce((sum, item) => {
-        const price = item.discountPrice || item.price; // استفاده از قیمت تخفیف در صورت وجود
+        const price = item.discountPrice || item.price;
         return sum + Number(price) * item.quantity;
       }, 0)
       .toFixed(2);
   }, [cartItems]);
 
-  // محاسبه مجموع کل تخفیف‌ها
   const calculateDiscountTotal = useMemo(() => {
     return cartItems.reduce((sum, item) => {
-      const discount = item.price - (item.discountPrice || item.price); // محاسبه میزان تخفیف
+      const discount = item.price > (item.discountPrice || item.price)
+        ? item.price - item.discountPrice
+        : 0;
       return sum + discount * item.quantity;
     }, 0);
   }, [cartItems]);
 
-  // مدیریت حذف آیتم از سبد خرید
   const handleRemoveFromCart = (productId, color, size) => {
     removeCartItem({
       productId,
@@ -101,7 +96,19 @@ const Cart = () => {
     });
   };
 
-  // بررسی خالی بودن سبد خرید
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        clearError();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
+
+  if (isLoading) {
+    return <Typography variant="h5">Loading...</Typography>;
+  }
+
   if (cartItems.length === 0) {
     return (
       <Container>
@@ -120,8 +127,8 @@ const Cart = () => {
       {error && <Typography color="error">{error}</Typography>}
 
       <List>
-        {cartItems.map((item, index) => (
-          <CartItem key={index} item={item} onRemove={handleRemoveFromCart} />
+        {cartItems.map((item) => (
+          <CartItem key={`${item.productId}-${item.color}-${item.size}`} item={item} onRemove={handleRemoveFromCart} />
         ))}
       </List>
 

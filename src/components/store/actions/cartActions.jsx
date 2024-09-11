@@ -3,26 +3,38 @@ import {
   REMOVE_FROM_CART,
   SET_ERROR,
   CLEAR_CART,
+  CART_LOADING,
+  CART_SUCCESS,
 } from "../constants/cartConstants";
 import axios from "axios";
 
 // Utility function for saving cart items to localStorage
-const saveCartToLocalStorage = (cartItems) => {
-  localStorage.setItem("cartItems", JSON.stringify(cartItems));
+const saveCartToLocalStorage = (cartItems, dispatch) => {
+  try {
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
+  } catch (error) {
+    console.error("Error saving cart to localStorage:", error);
+    dispatch({ type: SET_ERROR, payload: "Failed to save cart to localStorage" });
+  }
 };
 
 // Utility function for loading cart items from localStorage
-const loadCartFromLocalStorage = () => {
-  const cartItems = localStorage.getItem("cartItems");
-  return cartItems ? JSON.parse(cartItems) : [];
+const loadCartFromLocalStorage = (dispatch) => {
+  try {
+    const cartItems = localStorage.getItem("cartItems");
+    return cartItems ? JSON.parse(cartItems) : [];
+  } catch (error) {
+    console.error("Error loading cart from localStorage:", error);
+    dispatch({ type: SET_ERROR, payload: "Failed to load cart from localStorage" });
+    return [];
+  }
 };
 
 // Adding item to cart
 export const addCartItem = async (dispatch, item, token) => {
-  dispatch({ type: "CART_LOADING" }); // شروع لودینگ
+  dispatch({ type: CART_LOADING }); // Start loading
   try {
-    // Load current cart items
-    const cartItems = loadCartFromLocalStorage();
+    const cartItems = loadCartFromLocalStorage(dispatch);
     const existingItem = cartItems.find(
       (x) =>
         x.productId === item.productId &&
@@ -32,7 +44,6 @@ export const addCartItem = async (dispatch, item, token) => {
 
     let updatedCartItems;
 
-    // Update quantity if item already exists in cart
     if (existingItem) {
       updatedCartItems = cartItems.map((x) =>
         x.productId === existingItem.productId &&
@@ -45,14 +56,18 @@ export const addCartItem = async (dispatch, item, token) => {
       updatedCartItems = [...cartItems, item];
     }
 
-    // Save updated cart items to localStorage
-    saveCartToLocalStorage(updatedCartItems);
-
-    // Dispatch updated cart to reducer
+    saveCartToLocalStorage(updatedCartItems, dispatch);
     dispatch({ type: ADD_TO_CART, payload: item });
 
-    // Sync cart with server if token is available
     if (token) {
+      if (!navigator.onLine) {
+        dispatch({
+          type: SET_ERROR,
+          payload: "You are offline. Cart will be updated when you are back online.",
+        });
+        return;
+      }
+
       await axios.post(
         "/api/cart",
         { cartItems: updatedCartItems },
@@ -64,20 +79,22 @@ export const addCartItem = async (dispatch, item, token) => {
         }
       );
     }
-    dispatch({ type: "CART_SUCCESS" }); 
+
+    dispatch({ type: CART_SUCCESS });
   } catch (error) {
     console.error("Error syncing cart with server:", error.response || error);
     dispatch({
       type: SET_ERROR,
-      payload: "Failed to sync cart with server. Please try again later.",
+      payload: error.response?.data?.message || "Failed to sync cart with server. Please try again later.",
     });
   }
 };
 
 // Removing item from cart
 export const removeCartItem = async (dispatch, item, token) => {
+  dispatch({ type: CART_LOADING });
   try {
-    const cartItems = loadCartFromLocalStorage();
+    const cartItems = loadCartFromLocalStorage(dispatch);
     const updatedCartItems = cartItems.filter(
       (x) =>
         x.productId !== item.productId ||
@@ -85,14 +102,18 @@ export const removeCartItem = async (dispatch, item, token) => {
         x.color !== item.color
     );
 
-    // Save updated cart items to localStorage
-    saveCartToLocalStorage(updatedCartItems);
-
-    // Dispatch updated cart to reducer
+    saveCartToLocalStorage(updatedCartItems, dispatch);
     dispatch({ type: REMOVE_FROM_CART, payload: item });
 
-    // Sync cart with server if token is available
     if (token) {
+      if (!navigator.onLine) {
+        dispatch({
+          type: SET_ERROR,
+          payload: "You are offline. Cart will be updated when you are back online.",
+        });
+        return;
+      }
+
       await axios.post(
         "/api/cart",
         { cartItems: updatedCartItems },
@@ -104,6 +125,8 @@ export const removeCartItem = async (dispatch, item, token) => {
         }
       );
     }
+
+    dispatch({ type: CART_SUCCESS });
   } catch (error) {
     console.error("Error removing item from cart on server:", error.response || error);
     dispatch({
@@ -115,21 +138,28 @@ export const removeCartItem = async (dispatch, item, token) => {
 
 // Clearing the cart
 export const clearCart = async (dispatch, token) => {
+  dispatch({ type: CART_LOADING });
   try {
-    // Clear cart items from localStorage
     localStorage.removeItem("cartItems");
-
-    // Dispatch clear cart to reducer
     dispatch({ type: CLEAR_CART });
 
-    // Clear cart on server if token is available
     if (token) {
+      if (!navigator.onLine) {
+        dispatch({
+          type: SET_ERROR,
+          payload: "You are offline. Cart will be updated when you are back online.",
+        });
+        return;
+      }
+
       await axios.delete("/api/cart", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
     }
+
+    dispatch({ type: CART_SUCCESS });
   } catch (error) {
     console.error("Error clearing cart on server:", error.response || error);
     dispatch({
