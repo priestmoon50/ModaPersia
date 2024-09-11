@@ -10,7 +10,6 @@ import {
   Select,
   MenuItem,
   Radio,
-  TextField, // اضافه شدن برای فیلد تعداد
 } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -58,7 +57,7 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const navigate = useNavigate();
   const { control, handleSubmit } = useForm();
-  const { addCartItem, cartItems, error, isLoading } = useContext(CartContext);
+  const { addCartItem, error, isLoading } = useContext(CartContext);
   const theme = useTheme();
   const sizes = useMemo(() => product.sizes || [], [product.sizes]);
   const colors = useMemo(() => product.colors || [], [product.colors]);
@@ -85,53 +84,38 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
     }
   }, [colors, images, sizes]);
 
-const onSubmit = async (data) => {
-  // Check if color and size are selected
-  if (!state.selectedColor || !data.selectedSize) {
-    toast.error("Please select both color and size.");
-    return;
-  }
+  const onSubmit = async (data) => {
+    // Check if color and size are selected
+    if (!state.selectedColor || !data.selectedSize) {
+      toast.error("Please select both color and size.");
+      return;
+    }
 
-  // Ensure the product is valid and in stock
-  if (product.stock <= 0) {
-    toast.error("This product is out of stock.");
-    return;
-  }
+    // Ensure the product is valid and in stock
+    if (product.stock <= 0) {
+      toast.error("This product is out of stock.");
+      return;
+    }
 
-  // Check if the product is already in the cart
-  const isInCart = cartItems.some(
-    (item) =>
-      item.productId === product._id &&
-      item.color === state.selectedColor &&
-      item.size === data.selectedSize
-  );
+    // Create the cart item object with quantity set to 1
+    const cartItem = {
+      productId: product._id, // Ensure a valid MongoDB ObjectId
+      name: product.name,
+      price: product.discountPrice || product.price, // Use discount price if available
+      quantity: 1, // Quantity is always 1 when added to cart
+      color: state.selectedColor,
+      size: data.selectedSize,
+    };
 
-  if (isInCart) {
-    toast.info("Product is already in your cart!");
-    return;
-  }
-
-  // Create the cart item object
-  const cartItem = {
-    productId: product._id, // Ensure a valid MongoDB ObjectId
-    name: product.name,
-    price: product.discountPrice || product.price, // Use discount price if available
-    quantity: data.quantity || 1, // Default quantity
-    color: state.selectedColor,
-    size: data.selectedSize,
+    // Try to add the item to the cart
+    try {
+      await addCartItem(cartItem);
+      toast.success("Product successfully added to cart!");
+    } catch (err) {
+      console.error("Error adding product to cart:", err);
+      toast.error("Failed to add product to cart. Please try again.");
+    }
   };
-
-  // Try to add the item to the cart using axios
-  try {
-    await addCartItem(cartItem);
-    toast.success("Product successfully added to cart!");
-  } catch (err) {
-    console.error("Error adding product to cart:", err);
-    toast.error("Failed to add product to cart. Please try again.");
-  }
-};
-
-  
 
   const handleColorAndImageChange = (color) => {
     const colorIndex = colors.indexOf(color);
@@ -231,7 +215,7 @@ const onSubmit = async (data) => {
               color="error"
               sx={{
                 fontWeight: "bold",
-                fontSize: "1.4rem", // بزرگ‌تر برای قیمت تخفیف خورده
+                fontSize: "1.4rem",
                 marginTop: "4px",
               }}
             >
@@ -261,7 +245,12 @@ const onSubmit = async (data) => {
         </Typography>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <FormControl fullWidth>
+          <FormControl
+            sx={{
+              minWidth: "100px", // حداقل عرض برای کوچک‌تر کردن Select box
+              marginBottom: "8px", // فاصله از بخش‌های دیگر
+            }}
+          >
             <Controller
               name="selectedSize"
               control={control}
@@ -279,9 +268,11 @@ const onSubmit = async (data) => {
                     });
                   }}
                   sx={{
-                    marginBottom: "16px",
-                    borderColor: "#d81b60",
-                    fontWeight: "bold",
+                    padding: "4px", // کوچک کردن padding داخلی
+                    fontSize: "0.8rem", // کوچک‌تر کردن اندازه فونت
+                    height: "30px", // کاهش ارتفاع
+                    minWidth: "100px", // حداقل عرض فیلد
+                    borderRadius: "4px", // کمی گرد کردن گوشه‌ها برای ظاهر شیک‌تر
                   }}
                 >
                   <MenuItem value="" disabled>
@@ -325,8 +316,8 @@ const onSubmit = async (data) => {
                         name={color}
                         sx={{
                           backgroundColor: color,
-                          width: 28,
-                          height: 28,
+                          width: 18,
+                          height: 18,
                           borderRadius: "50%",
                           marginRight: 2,
                           border:
@@ -347,32 +338,6 @@ const onSubmit = async (data) => {
                 )}
               />
             </Box>
-          </FormControl>
-
-          {/* فیلد انتخاب تعداد */}
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ fontWeight: "bold", marginTop: "8px" }}
-          >
-            Quantity:
-          </Typography>
-          <FormControl fullWidth>
-            <Controller
-              name="quantity"
-              control={control}
-              defaultValue={1} // مقدار پیش‌فرض
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  type="number"
-                  inputProps={{ min: 1 }}
-                  variant="outlined"
-                  fullWidth
-                  sx={{ marginBottom: "16px" }}
-                />
-              )}
-            />
           </FormControl>
 
           {userInfo && userInfo.isAdmin && (
