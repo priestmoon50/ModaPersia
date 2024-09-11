@@ -20,7 +20,6 @@ const initialState = {
   cartItems: [],
   error: null,
   isLoading: false,
-  success: false, 
 };
 
 // CartProvider کامپوننت
@@ -49,7 +48,7 @@ export const CartProvider = ({ children }) => {
       dispatch({ type: SET_ERROR, payload: "Invalid product details" });
       return;
     }
-    dispatch({ type: "CART_LOADING" }); // شروع لودینگ
+
     // Dispatch تغییرات محلی
     dispatch({ type: ADD_TO_CART, payload: item });
 
@@ -57,7 +56,6 @@ export const CartProvider = ({ children }) => {
     if (userState.userLogin.userInfo?.token) {
       try {
         await addCartItemAction(dispatch, item, userState.userLogin.userInfo.token);
-        dispatch({ type: "CART_SUCCESS" }); // در صورت موفقیت
       } catch (error) {
         console.error("Error syncing cart with server:", error);
         dispatch({ type: SET_ERROR, payload: "Failed to sync cart with server" });
