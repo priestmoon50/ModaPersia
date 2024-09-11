@@ -10,14 +10,14 @@ import {
   Select,
   MenuItem,
   Radio,
+  TextField, // اضافه شدن برای فیلد تعداد
 } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import AddToFavoritesButton from "./AddToFavoritesButton";
 import { SERVER_URL } from "../../services/productService";
-import { toast } from "react-toastify"; // فقط toast را ایمپورت کنید
-import { useTheme } from "@mui/material"; // ایمپورت useTheme
-
+import { toast } from "react-toastify";
+import { useTheme } from "@mui/material";
 import CartContext from "../store/CartContext";
 
 const ACTIONS = {
@@ -85,35 +85,53 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
     }
   }, [colors, images, sizes]);
 
-  const onSubmit = async (data) => {
-    if (!state.selectedColor || !data.selectedSize) {
-      toast.error("Please select both color and size.");
-      return;
-    }
+const onSubmit = async (data) => {
+  // Check if color and size are selected
+  if (!state.selectedColor || !data.selectedSize) {
+    toast.error("Please select both color and size.");
+    return;
+  }
 
-    const isInCart = cartItems.some((item) => item.productId === product._id);
-    if (isInCart) {
-      toast.info("Product is already in your cart!");
-      return;
-    }
+  // Ensure the product is valid and in stock
+  if (product.stock <= 0) {
+    toast.error("This product is out of stock.");
+    return;
+  }
 
-    const cartItem = {
-      productId: String(product._id),
-      name: product.name,
-      price: product.price,
-      quantity: 1,
-      color: state.selectedColor,
-      size: data.selectedSize,
-    };
+  // Check if the product is already in the cart
+  const isInCart = cartItems.some(
+    (item) =>
+      item.productId === product._id &&
+      item.color === state.selectedColor &&
+      item.size === data.selectedSize
+  );
 
-    try {
-      await addCartItem(cartItem);
-      toast.success("Product successfully added to cart!");
-    } catch (err) {
-      console.error("Error adding product to cart:", err);
-      toast.error("Failed to add product to cart.");
-    }
+  if (isInCart) {
+    toast.info("Product is already in your cart!");
+    return;
+  }
+
+  // Create the cart item object
+  const cartItem = {
+    productId: product._id, // Ensure a valid MongoDB ObjectId
+    name: product.name,
+    price: product.discountPrice || product.price, // Use discount price if available
+    quantity: data.quantity || 1, // Default quantity
+    color: state.selectedColor,
+    size: data.selectedSize,
   };
+
+  // Try to add the item to the cart using axios
+  try {
+    await addCartItem(cartItem);
+    toast.success("Product successfully added to cart!");
+  } catch (err) {
+    console.error("Error adding product to cart:", err);
+    toast.error("Failed to add product to cart. Please try again.");
+  }
+};
+
+  
 
   const handleColorAndImageChange = (color) => {
     const colorIndex = colors.indexOf(color);
@@ -133,11 +151,10 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
         flexDirection: "column",
         border: "2px solid #4a4a4a",
         borderRadius: "15px",
-        boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)", // سایه اولیه
-        transition: "box-shadow 0.3s ease", // فقط انیمیشن سایه
+        boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
+        transition: "box-shadow 0.3s ease",
         "&:hover": {
-          boxShadow: "0px 8px 20px rgba(0, 0, 0, 0.3)", // سایه بیشتر در حالت هاور
-          // حذف scale برای جلوگیری از بزرگ شدن
+          boxShadow: "0px 8px 20px rgba(0, 0, 0, 0.3)",
         },
       }}
     >
@@ -149,11 +166,11 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
         sx={{
           objectFit: "contain",
           borderRadius: "15px 15px 0 0",
-          maxHeight: { xs: "200px", sm: "250px" }, // ریسپانسیو برای تصاویر
-          transition: "transform 0.3s ease", // اضافه کردن انیمیشن برای تصویر
-          marginTop: "16px", // فاصله از بالای کادر
+          maxHeight: { xs: "200px", sm: "250px" },
+          transition: "transform 0.3s ease",
+          marginTop: "16px",
           "&:hover": {
-            transform: "none", // جلوگیری از تغییرات اضافی روی تصویر در هاور
+            transform: "none",
           },
         }}
         crossOrigin="anonymous"
@@ -167,8 +184,8 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
             component="div"
             sx={{
               color: "#f8bbd0",
-              fontWeight: "bold", // متن پررنگ‌تر
-              fontSize: "1.4rem", // کمی بزرگ‌تر برای خوانایی بهتر
+              fontWeight: "bold",
+              fontSize: "1.4rem",
             }}
           >
             {product.name}
@@ -181,39 +198,57 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
         <Typography
           variant="body2"
           sx={{
-            color: theme.palette.mode === "dark" ? "#ffffff" : "#000000", // رنگ متن بر اساس حالت تم
-            fontWeight: "500", // افزایش ضخامت متن
+            color: theme.palette.mode === "dark" ? "#ffffff" : "#000000",
+            fontWeight: "500",
             lineHeight: 1.6,
             marginBottom: "12px",
             display: "-webkit-box",
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
-            WebkitLineClamp: 3, // نمایش 3 خط از توضیحات
-            textOverflow: "ellipsis", // اضافه کردن سه‌نقطه در انتهای متن
+            WebkitLineClamp: 3,
+            textOverflow: "ellipsis",
           }}
         >
           {product.description}
         </Typography>
 
-        <Typography
-          variant="body2"
-          color="#d81b60"
-          sx={{
-            textDecoration: product.discountPrice ? "line-through" : "none",
-            fontWeight: "bold", // قیمت پررنگ‌تر
-            fontSize: "1rem",
-          }}
-        >
-          Price: €{product.price.toFixed(2)}
-        </Typography>
-
-        {product.discountPrice && (
+        {/* نمایش قیمت اصلی و قیمت تخفیف خورده */}
+        {product.discountPrice ? (
+          <>
+            <Typography
+              variant="body2"
+              color="textSecondary"
+              sx={{
+                textDecoration: "line-through",
+                fontWeight: "bold",
+                fontSize: "1rem",
+              }}
+            >
+              Original Price: €{product.price.toFixed(2)}
+            </Typography>
+            <Typography
+              variant="body1"
+              color="error"
+              sx={{
+                fontWeight: "bold",
+                fontSize: "1.4rem", // بزرگ‌تر برای قیمت تخفیف خورده
+                marginTop: "4px",
+              }}
+            >
+              Discounted Price: €{finalPrice.toFixed(2)}
+            </Typography>
+          </>
+        ) : (
           <Typography
             variant="body1"
-            color="error"
-            sx={{ fontWeight: "bold", fontSize: "1.2rem" }}
+            color="textSecondary"
+            sx={{
+              fontWeight: "bold",
+              fontSize: "1.2rem",
+              marginTop: "4px",
+            }}
           >
-            Discounted Price: €{finalPrice.toFixed(2)}
+            Price: €{product.price.toFixed(2)}
           </Typography>
         )}
 
@@ -299,10 +334,10 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
                               ? "2px solid #39ff14"
                               : "none",
                           "&:hover": {
-                            boxShadow: "0 0 5px rgba(0, 0, 0, 0.5)", // سایه در حالت هاور
+                            boxShadow: "0 0 5px rgba(0, 0, 0, 0.5)",
                           },
                           "&:focus-visible": {
-                            boxShadow: "0 0 10px #39ff14", // سبز در حالت انتخاب
+                            boxShadow: "0 0 10px #39ff14",
                           },
                         }}
                         inputProps={{ "aria-label": color }}
@@ -314,6 +349,32 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
             </Box>
           </FormControl>
 
+          {/* فیلد انتخاب تعداد */}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontWeight: "bold", marginTop: "8px" }}
+          >
+            Quantity:
+          </Typography>
+          <FormControl fullWidth>
+            <Controller
+              name="quantity"
+              control={control}
+              defaultValue={1} // مقدار پیش‌فرض
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  type="number"
+                  inputProps={{ min: 1 }}
+                  variant="outlined"
+                  fullWidth
+                  sx={{ marginBottom: "16px" }}
+                />
+              )}
+            />
+          </FormControl>
+
           {userInfo && userInfo.isAdmin && (
             <Box sx={{ mt: 2 }}>
               <Button
@@ -322,8 +383,8 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
                 onClick={() => {
                   navigate(`/admin/edit-product/${product._id}`);
                 }}
-                size="small" // اندازه کوچک‌تر دکمه
-                sx={{ mr: 1 }} // فاصله از دکمه دیگر
+                size="small"
+                sx={{ mr: 1 }}
               >
                 Edit
               </Button>
@@ -331,7 +392,7 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
                 variant="contained"
                 color="error"
                 onClick={() => handleDelete(product._id)}
-                size="small" // اندازه کوچک‌تر دکمه
+                size="small"
               >
                 Delete
               </Button>
@@ -343,16 +404,16 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
               variant="contained"
               color="secondary"
               type="submit"
-              size="small" // اندازه کوچک‌تر دکمه
+              size="small"
               sx={{
-                backgroundColor: "#4a4a4a", // رنگ سیمانی برای دکمه
+                backgroundColor: "#4a4a4a",
                 color: "#fff",
-                fontWeight: "bold", // دکمه‌ها با فونت پررنگ
-                padding: "8px 16px", // کوچک‌تر کردن پدینگ برای دکمه‌ها
+                fontWeight: "bold",
+                padding: "8px 16px",
                 "&:hover": {
-                  backgroundColor: "#66068bac", // تغییر رنگ به سبز در هاور
+                  backgroundColor: "#66068bac",
                 },
-                mr: 2, // فاصله بین دکمه‌ها
+                mr: 2,
               }}
               disabled={
                 !state.selectedSize || !state.selectedColor || isLoading
@@ -368,14 +429,14 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
               component={Link}
               to={`/product/${product._id}`}
               state={{ product }}
-              size="small" // اندازه کوچک‌تر دکمه
+              size="small"
               sx={{
                 backgroundColor: "#4a4a4a",
                 color: "#fff",
-                fontWeight: "bold", // فونت پررنگ‌تر
-                padding: "8px 16px", // کوچک‌تر کردن پدینگ برای دکمه‌ها
+                fontWeight: "bold",
+                padding: "8px 16px",
                 "&:hover": {
-                  backgroundColor: "#66068bac", // سبز در حالت هاور
+                  backgroundColor: "#66068bac",
                 },
               }}
             >

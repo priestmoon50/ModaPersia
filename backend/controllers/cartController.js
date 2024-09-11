@@ -3,85 +3,111 @@ const asyncHandler = require("express-async-handler");
 const Cart = require("../models/cartModel");
 const Product = require("../models/Product");
 
+// Helper function for error handling
+const handleError = (res, statusCode, message) => {
+  return res.status(statusCode).json({ message });
+};
+
 // @desc Add item to cart
 // @route POST /api/cart
 // @access Private
 const addToCart = asyncHandler(async (req, res) => {
   const { productId, quantity, color, size } = req.body;
+  const userId = req.user ? req.user._id : req.body.user;
 
   // بررسی ورودی‌های الزامی
   if (!productId || !quantity || quantity <= 0 || !color || !size) {
-    return res.status(400).json({ message: "اطلاعات محصول معتبر نیست" });
+    return handleError(res, 400, "اطلاعات محصول معتبر نیست");
   }
 
   // بررسی معتبر بودن productId
   if (!mongoose.Types.ObjectId.isValid(productId)) {
-    return res.status(400).json({ message: "Product ID is invalid" });
+    return handleError(res, 400, `شناسه محصول معتبر نیست: ${productId}`);
   }
 
-  const userId = req.user ? req.user._id : req.body.user;
+  // شروع تراکنش
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  // بررسی وجود محصول و موجودی آن
-  const product = await Product.findById(productId);
-  if (!product) {
-    return res.status(404).json({ message: "محصول یافت نشد" });
-  }
-
-  if (product.stock < quantity) {
-    return res.status(400).json({ message: "موجودی کافی نیست" });
-  }
-
-  // محاسبه قیمت نهایی بر اساس قیمت محصول یا تخفیف
-  const cartItem = {
-    product: productId,
-    quantity,
-    color,
-    size,
-    price: product.price,
-    discountPrice: product.discountPrice || product.price,
-    totalPrice: (product.discountPrice || product.price) * quantity,
-  };
-
-  // پیدا کردن یا ساختن سبد خرید
-  let cart = await Cart.findOne({ user: userId });
-
-  if (cart) {
-    // چک کردن اینکه آیتم در سبد خرید هست یا نه
-    const existingItem = cart.items.find(
-      (item) =>
-        item.product.toString() === productId &&
-        item.color === color &&
-        item.size === size
-    );
-
-    if (existingItem) {
-      // بررسی موجودی برای جلوگیری از افزایش بیش از حد تعداد
-      const newQuantity = existingItem.quantity + quantity;
-      if (newQuantity > product.stock) {
-        return res
-          .status(400)
-          .json({ message: "موجودی کافی برای افزایش این تعداد وجود ندارد" });
-      }
-      // به‌روزرسانی تعداد و قیمت کل
-      existingItem.quantity = newQuantity;
-      existingItem.totalPrice =
-        existingItem.quantity *
-        (existingItem.discountPrice || existingItem.price);
-    } else {
-      // اضافه کردن آیتم جدید به سبد خرید
-      cart.items.push(cartItem);
+  try {
+    // بررسی وجود محصول و موجودی آن
+    const product = await Product.findById(productId).session(session);
+    if (!product) {
+      await session.abortTransaction();
+      session.endSession();
+      return handleError(res, 404, "محصول یافت نشد");
     }
 
-    await cart.save();
-    res.status(200).json(cart);
-  } else {
-    // ساختن سبد خرید جدید برای کاربر
-    cart = await Cart.create({
-      user: userId,
-      items: [cartItem],
-    });
+    // بررسی موجودی محصول
+    if (product.stock < quantity) {
+      await session.abortTransaction();
+      session.endSession();
+      return handleError(res, 400, "موجودی کافی نیست");
+    }
 
-    res.status(201).json(cart);
+    // محاسبه قیمت نهایی بر اساس قیمت محصول و تخفیف
+    const discount = product.discount || 0;
+    const finalPrice = product.price * (1 - discount / 100);
+    const totalPrice = finalPrice * quantity;
+
+    // ساخت آیتم سبد خرید
+    const cartItem = {
+      product: productId,
+      quantity,
+      color,
+      size,
+      price: product.price, // قیمت اصلی
+      discount, // درصد تخفیف
+      finalPrice, // قیمت نهایی با تخفیف
+      totalPrice, // مجموع قیمت برای تعداد مشخصی از محصول
+    };
+
+    // پیدا کردن یا ساختن سبد خرید
+    let cart = await Cart.findOne({ user: userId }).session(session);
+
+    if (cart) {
+      // بررسی وجود آیتم مشابه در سبد خرید
+      const existingItem = cart.items.find(
+        (item) =>
+          item.product.toString() === productId &&
+          item.color === color &&
+          item.size === size
+      );
+
+      if (existingItem) {
+        // به‌روزرسانی تعداد و قیمت کل آیتم موجود
+        const newQuantity = existingItem.quantity + quantity;
+        if (newQuantity > product.stock) {
+          await session.abortTransaction();
+          session.endSession();
+          return handleError(res, 400, "موجودی کافی برای این تعداد وجود ندارد");
+        }
+
+        existingItem.quantity = newQuantity;
+        existingItem.totalPrice = newQuantity * (existingItem.finalPrice || existingItem.price);
+      } else {
+        // اضافه کردن آیتم جدید به سبد خرید
+        cart.items.push(cartItem);
+      }
+    } else {
+      // ساختن سبد خرید جدید
+      cart = new Cart({
+        user: userId,
+        items: [cartItem],
+      });
+    }
+
+    await cart.save({ session });
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json(cart);
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error(error);
+    return handleError(res, 500, "خطایی در سرور رخ داد");
   }
 });
 
@@ -91,16 +117,21 @@ const addToCart = asyncHandler(async (req, res) => {
 const getCartItems = asyncHandler(async (req, res) => {
   const userId = req.user ? req.user._id : req.body.user;
 
-  // پیدا کردن سبد خرید و جمع آوری اطلاعات محصولات
-  const cart = await Cart.findOne({ user: userId }).populate(
-    "items.product",
-    "name price"
-  );
+  try {
+    // پیدا کردن سبد خرید و جمع آوری اطلاعات محصولات
+    const cart = await Cart.findOne({ user: userId }).populate(
+      "items.product",
+      "name price"
+    );
 
-  if (cart) {
+    if (!cart) {
+      return handleError(res, 404, "سبد خرید پیدا نشد");
+    }
+
     res.json(cart);
-  } else {
-    res.status(404).json({ message: "سبد خرید پیدا نشد" });
+  } catch (error) {
+    console.error(error);
+    return handleError(res, 500, "خطایی در سرور رخ داد");
   }
 });
 
@@ -110,23 +141,28 @@ const getCartItems = asyncHandler(async (req, res) => {
 const removeFromCart = asyncHandler(async (req, res) => {
   const userId = req.user ? req.user._id : req.body.user;
 
-  const cart = await Cart.findOne({ user: userId });
+  try {
+    const cart = await Cart.findOne({ user: userId });
 
-  if (cart) {
+    if (!cart) {
+      return handleError(res, 404, "سبد خرید پیدا نشد");
+    }
+
     const itemIndex = cart.items.findIndex(
       (item) => item._id.toString() === req.params.id
     );
 
-    if (itemIndex > -1) {
-      // حذف آیتم از سبد خرید
-      cart.items.splice(itemIndex, 1);
-      await cart.save();
-      res.status(200).json(cart);
-    } else {
-      res.status(404).json({ message: "آیتم در سبد خرید پیدا نشد" });
+    if (itemIndex === -1) {
+      return handleError(res, 404, "آیتم در سبد خرید پیدا نشد");
     }
-  } else {
-    res.status(404).json({ message: "سبد خرید پیدا نشد" });
+
+    // حذف آیتم از سبد خرید
+    cart.items.splice(itemIndex, 1);
+    await cart.save();
+    res.status(200).json(cart);
+  } catch (error) {
+    console.error(error);
+    return handleError(res, 500, "خطایی در سرور رخ داد");
   }
 });
 

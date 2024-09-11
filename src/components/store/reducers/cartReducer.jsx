@@ -3,19 +3,49 @@ import {
   REMOVE_FROM_CART,
   SET_ERROR,
   CLEAR_CART,
+  LOAD_CART_FROM_STORAGE,
 } from "../constants/cartConstants";
 
-// Utility function برای ذخیره سبد خرید در localStorage
+// Utility function برای ذخیره‌سازی سبد خرید در localStorage
 const saveCartToLocalStorage = (cartItems) => {
-  localStorage.setItem("cartItems", JSON.stringify(cartItems));
+  try {
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
+  } catch (error) {
+    console.error("Error saving cart to localStorage:", error);
+  }
+};
+
+// Utility function برای حذف سبد خرید از localStorage
+const clearCartFromLocalStorage = () => {
+  try {
+    localStorage.removeItem("cartItems");
+  } catch (error) {
+    console.error("Error clearing cart from localStorage:", error);
+  }
 };
 
 export const cartReducer = (state, action) => {
   switch (action.type) {
-    case ADD_TO_CART:
+    case "CART_LOADING":
+      return {
+        ...state,
+        isLoading: true,
+        error: null,
+      };
+
+    case "CART_SUCCESS":
+      return {
+        ...state,
+        isLoading: false,
+        success: true,
+      };
+    case ADD_TO_CART: {
       const item = action.payload;
       const existingItem = state.cartItems.find(
-        (x) => x.productId === item.productId && x.size === item.size && x.color === item.color
+        (x) =>
+          x.productId === item.productId &&
+          x.size === item.size &&
+          x.color === item.color
       );
 
       let updatedCartItems;
@@ -28,19 +58,22 @@ export const cartReducer = (state, action) => {
             ? { ...x, quantity: x.quantity + item.quantity }
             : x
         );
-      } else { 
+      } else {
         updatedCartItems = [...state.cartItems, item];
       }
-  
+
       // ذخیره‌سازی سبد خرید به‌روزرسانی‌شده در localStorage
       saveCartToLocalStorage(updatedCartItems);
 
       return {
         ...state,
         cartItems: updatedCartItems,
+        isLoading: false,  // متوقف کردن لودینگ
+        success: true,     // به‌روزرسانی موفقیت
       };
+    }
 
-    case REMOVE_FROM_CART:
+    case REMOVE_FROM_CART: {
       const filteredCartItems = state.cartItems.filter(
         (x) =>
           x.productId !== action.payload.productId ||
@@ -55,15 +88,21 @@ export const cartReducer = (state, action) => {
         ...state,
         cartItems: filteredCartItems,
       };
+    }
 
     case SET_ERROR:
       return { ...state, error: action.payload };
 
     case CLEAR_CART:
       // پاک کردن سبد خرید از localStorage
-      localStorage.removeItem("cartItems");
-
+      clearCartFromLocalStorage();
       return { ...state, cartItems: [] };
+
+    case LOAD_CART_FROM_STORAGE:
+      return {
+        ...state,
+        cartItems: action.payload || [],
+      };
 
     default:
       return state;

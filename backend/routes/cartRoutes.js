@@ -11,7 +11,9 @@ const validateAddToCart = [
   check('productId')
     .not()
     .isEmpty()
-    .withMessage('Product ID is required'),
+    .withMessage('Product ID is required')
+    .isMongoId()
+    .withMessage('Invalid Product ID format'),
   check('quantity')
     .isInt({ gt: 0 })
     .withMessage('Quantity must be a positive integer'),
@@ -23,9 +25,6 @@ const validateAddToCart = [
     .not()
     .isEmpty()
     .withMessage('Size is required'),
-  check('price')
-    .isFloat({ gt: 0 })
-    .withMessage('Price must be a positive number'),
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

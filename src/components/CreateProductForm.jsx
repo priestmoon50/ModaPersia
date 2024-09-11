@@ -67,7 +67,9 @@ const CreateProductForm = () => {
       formData.append("name", data.name);
       formData.append("description", data.description);
       formData.append("price", data.price);
-      formData.append("discountPercentage", data.discountPercentage);
+      if (data.discountPercentage) {
+        formData.append("discountPercentage", data.discountPercentage);
+      }
 
       // تبدیل آرایه‌ها به رشته‌های JSON
       formData.append("sizes", JSON.stringify(data.sizes));

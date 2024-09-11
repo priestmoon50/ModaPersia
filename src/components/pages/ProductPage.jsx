@@ -84,7 +84,6 @@ const ProductPage = () => {
         formData.append("description", data.description);
         formData.append("price", data.price);
         formData.append("discountPercentage", data.discountPercentage || 0);
-  
         formData.append("sizes", JSON.stringify(data.sizes));
         formData.append("colors", JSON.stringify(data.colors));
   
@@ -221,7 +220,7 @@ const ProductPage = () => {
         </Box>
       )}
 
-      <Grid container spacing={4}>
+      <Grid container spacing={2}>
         {filteredProducts.map((product, index) => (
           <Grid
             item

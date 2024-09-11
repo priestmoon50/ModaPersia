@@ -60,13 +60,8 @@ app.use(
   })
 );
 
-// محدود کردن تعداد درخواست‌ها (در محیط توسعه می‌توانید آن را غیرفعال کنید)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 دقیقه
-  max: 100, // حداکثر 100 درخواست در هر 15 دقیقه از یک IP
-  message: "Too many requests from this IP, please try again later",
-});
-app.use(limiter);
+
+
 
 // اتصال به MongoDB
 connectDB();

@@ -1,10 +1,10 @@
 import React, { createContext, useReducer, useEffect, useContext } from "react";
-import { UserContext } from "./UserContext"; // برای دسترسی به وضعیت کاربر
+import { UserContext } from "./UserContext"; 
 import {
   addCartItem as addCartItemAction,
   removeCartItem as removeCartItemAction,
   clearCart as clearCartAction,
-} from "./actions/cartActions"; // اکشن‌های همگام‌سازی با سرور
+} from "./actions/cartActions"; 
 import {
   ADD_TO_CART,
   REMOVE_FROM_CART,
@@ -12,6 +12,7 @@ import {
   CLEAR_CART,
   LOAD_CART_FROM_STORAGE,
 } from "./constants/cartConstants";
+import { cartReducer } from './reducers/cartReducer';  // فرض بر اینکه فایل cartReducer.js در پوشه store است
 
 const CartContext = createContext();
 
@@ -19,65 +20,13 @@ const initialState = {
   cartItems: [],
   error: null,
   isLoading: false,
+  success: false, 
 };
 
-const cartReducer = (state, action) => {
-  switch (action.type) {
-    case ADD_TO_CART:
-      const item = action.payload;
-      const existingItem = state.cartItems.find(
-        (x) =>
-          x.productId === item.productId &&
-          x.size === item.size &&
-          x.color === item.color
-      );
-
-      if (existingItem) {
-        return {
-          ...state,
-          cartItems: state.cartItems.map((x) =>
-            x.productId === existingItem.productId &&
-            x.size === existingItem.size &&
-            x.color === existingItem.color
-              ? { ...x, quantity: x.quantity + item.quantity }
-              : x
-          ),
-        };
-      } else {
-        return {
-          ...state,
-          cartItems: [...state.cartItems, item],
-        };
-      }
-
-    case REMOVE_FROM_CART:
-      return {
-        ...state,
-        cartItems: state.cartItems.filter(
-          (item) =>
-            item.productId !== action.payload.productId ||
-            item.size !== action.payload.size ||
-            item.color !== action.payload.color
-        ),
-      };
-
-    case SET_ERROR:
-      return { ...state, error: action.payload };
-
-    case CLEAR_CART:
-      return { ...state, cartItems: [] };
-
-    case LOAD_CART_FROM_STORAGE:
-      return { ...state, cartItems: action.payload };
-
-    default:
-      return state;
-  }
-};
-
+// CartProvider کامپوننت
 export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
-  const { state: userState } = useContext(UserContext); // دسترسی به وضعیت کاربر
+  const { state: userState } = useContext(UserContext);
 
   // Load cart from localStorage on initial load
   useEffect(() => {
@@ -87,7 +36,11 @@ export const CartProvider = ({ children }) => {
 
   // Save cart to localStorage whenever cartItems change
   useEffect(() => {
-    localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
+    try {
+      localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
+    } catch (error) {
+      dispatch({ type: SET_ERROR, payload: "Failed to save cart in localStorage" });
+    }
   }, [state.cartItems]);
 
   // Add item to cart
@@ -96,14 +49,15 @@ export const CartProvider = ({ children }) => {
       dispatch({ type: SET_ERROR, payload: "Invalid product details" });
       return;
     }
-
-    // Dispatch کردن تغییرات به صورت محلی
+    dispatch({ type: "CART_LOADING" }); // شروع لودینگ
+    // Dispatch تغییرات محلی
     dispatch({ type: ADD_TO_CART, payload: item });
 
-    // ارسال سبد خرید به سرور در صورت موجود بودن توکن کاربر
+    // ارسال به سرور در صورت موجود بودن توکن
     if (userState.userLogin.userInfo?.token) {
       try {
         await addCartItemAction(dispatch, item, userState.userLogin.userInfo.token);
+        dispatch({ type: "CART_SUCCESS" }); // در صورت موفقیت
       } catch (error) {
         console.error("Error syncing cart with server:", error);
         dispatch({ type: SET_ERROR, payload: "Failed to sync cart with server" });
@@ -113,10 +67,10 @@ export const CartProvider = ({ children }) => {
 
   // Remove item from cart
   const removeCartItem = async (item) => {
-    // Dispatch کردن تغییرات به صورت محلی
+    // Dispatch تغییرات محلی
     dispatch({ type: REMOVE_FROM_CART, payload: item });
 
-    // ارسال سبد خرید به سرور در صورت موجود بودن توکن کاربر
+    // ارسال به سرور در صورت موجود بودن توکن
     if (userState.userLogin.userInfo?.token) {
       try {
         await removeCartItemAction(dispatch, item, userState.userLogin.userInfo.token);
@@ -129,10 +83,10 @@ export const CartProvider = ({ children }) => {
 
   // Clear cart
   const clearCart = async () => {
-    // Dispatch کردن تغییرات به صورت محلی
+    // Dispatch تغییرات محلی
     dispatch({ type: CLEAR_CART });
 
-    // پاک کردن سبد خرید از سرور در صورت موجود بودن توکن کاربر
+    // پاک کردن سبد خرید از سرور
     if (userState.userLogin.userInfo?.token) {
       try {
         await clearCartAction(dispatch, userState.userLogin.userInfo.token);
