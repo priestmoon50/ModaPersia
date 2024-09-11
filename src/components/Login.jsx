@@ -15,26 +15,29 @@ import {
   Box,
   IconButton,
   CircularProgress,
+  Modal,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import ForgetPassword from "./ForgetPassword";
 import { UserContext } from "./store/UserContext";
 
 export default function Login() {
-  const theme = useTheme(); // دسترسی به تم
+  const theme = useTheme();
   const navigate = useNavigate();
   const { state, loginUser, logoutUser, verifyToken } = useContext(UserContext);
   const { userLogin } = state;
   const user = userLogin?.userInfo;
   const isLoggedIn = !!user;
 
-  // استفاده از یک شیء برای مدیریت حالت‌ها
+  // مدیریت حالت‌های محلی (Local State)
   const [loginState, setLoginState] = useState({
     showPassword: false,
     rememberMe: false,
     showForgetPassword: false,
+    loading: false,
   });
 
+  // اعتبارسنجی فرم با استفاده از yup
   const schema = yup.object().shape({
     username: yup.string().required("Username is required"),
     password: yup.string().required("Password is required"),
@@ -49,12 +52,13 @@ export default function Login() {
     resolver: yupResolver(schema),
   });
 
-  // اعتبارسنجی توکن در بارگذاری صفحه
+  // اعتبارسنجی توکن JWT در بارگذاری اولیه صفحه
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (token) {
       const checkTokenValidity = async () => {
         try {
+          setLoginState((prev) => ({ ...prev, loading: true }));
           const isValid = await verifyToken(token);
           if (!isValid) {
             logoutUser();
@@ -66,6 +70,8 @@ export default function Login() {
           logoutUser();
           toast.error("Error validating token. Please log in again.");
           navigate("/login");
+        } finally {
+          setLoginState((prev) => ({ ...prev, loading: false }));
         }
       };
       checkTokenValidity();
@@ -75,10 +81,8 @@ export default function Login() {
   // بارگذاری اطلاعات ذخیره‌شده در حافظه
   useEffect(() => {
     const savedUsername = localStorage.getItem("savedUsername");
-    const savedPassword = localStorage.getItem("savedPassword");
-    if (savedUsername && savedPassword) {
+    if (savedUsername) {
       setValue("username", savedUsername);
-      setValue("password", savedPassword);
       setLoginState((prevState) => ({
         ...prevState,
         rememberMe: true,
@@ -88,26 +92,28 @@ export default function Login() {
 
   const onSubmit = async (data) => {
     try {
+      setLoginState((prev) => ({ ...prev, loading: true }));
       const response = await loginUser(data.username, data.password);
       if (response && response.token) {
-        localStorage.setItem("authToken", response.token);
+        // به جای ذخیره توکن در LocalStorage، توکن در کوکی HttpOnly ذخیره می‌شود
+        document.cookie = `authToken=${response.token}; HttpOnly; Secure; SameSite=Strict`;
       }
 
       if (loginState.rememberMe) {
         localStorage.setItem("savedUsername", data.username);
-        localStorage.setItem("savedPassword", data.password);
       } else {
         localStorage.removeItem("savedUsername");
-        localStorage.removeItem("savedPassword");
       }
 
-      // جلوگیری از بازگشت به صفحه ورود
+      toast.success("Login successful!");
       navigate("/profile", { replace: true });
     } catch (error) {
       console.error("Login error:", error);
       const errorMessage =
         error.response?.data?.message || "Invalid username or password";
       toast.error(errorMessage);
+    } finally {
+      setLoginState((prev) => ({ ...prev, loading: false }));
     }
   };
 
@@ -126,8 +132,28 @@ export default function Login() {
         height: "100vh",
         backgroundImage: `url(/path/to/your/image.png)`,
         backgroundSize: "cover",
+        position: "relative",
       }}
     >
+      {loginState.loading && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            zIndex: 10,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      )}
+
       <Box
         sx={{
           width: "100%",
@@ -144,7 +170,6 @@ export default function Login() {
               : "1px solid rgba(0, 0, 0, 0.1)",
         }}
       >
-        {isSubmitting && <CircularProgress />}
         <Typography
           variant="h4"
           gutterBottom
@@ -221,7 +246,7 @@ export default function Login() {
               color="primary"
               fullWidth
               sx={{ mb: 2 }}
-              disabled={isSubmitting}
+              disabled={isSubmitting || loginState.loading}
             >
               Login
             </Button>
@@ -251,7 +276,19 @@ export default function Login() {
         )}
       </Box>
 
-      {loginState.showForgetPassword && <ForgetPassword />}
+      {/* Modal for Forget Password */}
+      <Modal
+        open={loginState.showForgetPassword}
+        onClose={() =>
+          setLoginState((prevState) => ({
+            ...prevState,
+            showForgetPassword: false,
+          }))
+        }
+      >
+        <ForgetPassword />
+      </Modal>
+
       <ToastContainer />
     </Container>
   );
