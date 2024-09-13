@@ -6,10 +6,9 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useTheme } from "@mui/material/styles";
-import axios from "axios";
 import {
   Button,
-  Checkbox,
+
   TextField,
   Typography,
   Container,
@@ -25,13 +24,11 @@ import { UserContext } from "./store/UserContext";
 export default function Login() {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { state, loginUser, logoutUser, verifyToken } = useContext(UserContext);
+  const { state, loginUser, loadUserFromStorage } = useContext(UserContext);
   const { userLogin } = state;
-  console.log("Login component: userLogin state:", userLogin);
   const user = userLogin?.userInfo;
   const isLoggedIn = !!user;
-  console.log("Login component: User info:", user);
-  console.log("Login component: isLoggedIn:", isLoggedIn);
+
   // مدیریت حالت‌های محلی (Local State)
   const [loginState, setLoginState] = useState({
     showPassword: false,
@@ -39,14 +36,6 @@ export default function Login() {
     showForgetPassword: false,
     loading: false,
   });
-  const [authToken, setAuthToken] = useState(null); // ایجاد setAuthToken
-  // تنظیم توکن در درخواست‌های Axios پس از ورود کاربر
-  useEffect(() => {
-    if (authToken) {
-      // اگر توکن موجود بود، آن را به عنوان هدر Authorization در axios قرار می‌دهیم
-      axios.defaults.headers.common["Authorization"] = `Bearer ${authToken}`;
-    }
-  }, [authToken]);
 
   // اعتبارسنجی فرم با استفاده از yup
   const schema = yup.object().shape({
@@ -63,34 +52,17 @@ export default function Login() {
     resolver: yupResolver(schema),
   });
 
-  // اعتبارسنجی توکن JWT در بارگذاری اولیه صفحه
+  // بررسی و اعتبارسنجی توکن در بارگذاری اولیه صفحه
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    console.log("Loin component : JWT token in localStorage:", token);
-    if (token) {
-      const checkTokenValidity = async () => {
-        try {
-          setLoginState((prev) => ({ ...prev, loading: true }));
-          const isValid = await verifyToken(token);
-          console.log("Loin component : Token validity:", isValid);
-          if (isValid) {
-            // هدایت به صفحه پروفایل اگر توکن معتبر است
-            navigate("/profile", { replace: true });
-          } else {
-            logoutUser();
-            toast.error("Your session has expired. Please log in again.");
-          }
-        } catch (error) {
-          console.error("Error validating token:", error);
-          logoutUser();
-          toast.error("Error validating token. Please log in again.");
-        } finally {
-          setLoginState((prev) => ({ ...prev, loading: false }));
-        }
-      };
-      checkTokenValidity();
+    loadUserFromStorage();
+  }, [loadUserFromStorage]);
+
+  // هدایت کاربر به صفحه اصلی در صورتی که لاگین کرده باشد
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate("/products"); // هدایت به صفحه محصولات یا صفحه مورد نظر
     }
-  }, [navigate, logoutUser, verifyToken]);
+  }, [isLoggedIn, navigate]);
 
   // بارگذاری اطلاعات ذخیره‌شده در حافظه
   useEffect(() => {
@@ -109,38 +81,26 @@ export default function Login() {
       setLoginState((prev) => ({ ...prev, loading: true }));
 
       const response = await loginUser(data.username, data.password);
-
-      if (response && response.token) {
-        // ذخیره توکن در state (برای استفاده سریع)
-        setAuthToken(response.token);
-
-        // ذخیره توکن در localStorage (برای استفاده بعدی)
-        localStorage.setItem("authToken", response.token);
-
-        // ذخیره refresh token در کوکی HTTP-Only سمت سرور
-        document.cookie = `refreshToken=${response.refreshToken}; HttpOnly; Secure; SameSite=Strict`;
-
-        // هدایت به صفحه پروفایل
+      if (response) {
         toast.success("Login successful!");
-        navigate("/profile", { replace: true });
-      }
+        navigate("/", { replace: true });
 
-      if (loginState.rememberMe) {
-        localStorage.setItem("savedUsername", data.username);
-      } else {
-        localStorage.removeItem("savedUsername");
+        // ذخیره نام کاربری در صورت انتخاب Remember Me
+        if (loginState.rememberMe) {
+          localStorage.setItem("savedUsername", data.username);
+        } else {
+          localStorage.removeItem("savedUsername");
+        }
       }
     } catch (error) {
-      toast.error("Login failed. Please try again.");
+      const errorMessage =
+        error?.response?.data?.message || "Login failed. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoginState((prev) => ({ ...prev, loading: false }));
     }
   };
 
-  const handleLogout = () => {
-    logoutUser();
-    toast.success("Successfully logged out.");
-  };
 
   return (
     <Container
@@ -199,16 +159,7 @@ export default function Login() {
           Login
         </Typography>
 
-        {isLoggedIn ? (
-          <Box>
-            <Typography variant="body1" color={theme.palette.text.primary}>
-              You are logged in as {user?.username}. Please log out first.
-            </Typography>
-            <Button onClick={handleLogout} variant="contained" sx={{ mt: 2 }}>
-              Logout
-            </Button>
-          </Box>
-        ) : (
+        {!isLoggedIn && (
           <form onSubmit={handleSubmit(onSubmit)}>
             <TextField
               label="Username"
@@ -248,22 +199,6 @@ export default function Login() {
                 ),
               }}
             />
-
-            <Box display="flex" alignItems="center" mb={2}>
-              <Checkbox
-                checked={loginState.rememberMe}
-                onChange={() =>
-                  setLoginState((prevState) => ({
-                    ...prevState,
-                    rememberMe: !prevState.rememberMe,
-                  }))
-                }
-              />
-              <Typography variant="body2" color={theme.palette.text.secondary}>
-                Remember me
-              </Typography>
-            </Box>
-
             <Button
               type="submit"
               variant="contained"
@@ -273,28 +208,6 @@ export default function Login() {
               disabled={isSubmitting || loginState.loading}
             >
               Login
-            </Button>
-
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={() => navigate("/Register")}
-            >
-              Register
-            </Button>
-
-            <Button
-              variant="text"
-              fullWidth
-              onClick={() =>
-                setLoginState((prevState) => ({
-                  ...prevState,
-                  showForgetPassword: true,
-                }))
-              }
-              sx={{ mt: 1 }}
-            >
-              Forgot Password?
             </Button>
           </form>
         )}

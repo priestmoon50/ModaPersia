@@ -40,83 +40,83 @@ const stateKeysMap = {
 const userReducer = (state = userInitialState, action) => {
   const { type, payload } = action;
 
-  // Check if the action type exists in the state keys map
-  if (stateKeysMap[type]) {
-    switch (type) {
-      case USER_AUTH.LOGIN_REQUEST:
-      case USER_REGISTER.REQUEST:
-        return updateState(state, stateKeysMap[type], {
-          loading: true,
-          error: null,
-          userInfo: null,
-        });
-
-      case USER_AUTH.LOGIN_SUCCESS:
-      case USER_REGISTER.SUCCESS:
-        return updateState(state, stateKeysMap[type], {
-          loading: false,
-          userInfo: payload,
-          error: null,
-        });
-
-      case USER_AUTH.LOGIN_FAIL:
-      case USER_REGISTER.FAIL:
-        return updateState(state, stateKeysMap[type], {
-          loading: false,
-          error: payload,
-          userInfo: null,
-        });
-
-      case USER_AUTH.LOGOUT:
-        return updateState(state, 'userLogin', {
-          userInfo: null,
-          loading: false,
-          error: null,
-        });
-
-      case USER_DETAILS.REQUEST:
-        return updateState(state, 'userDetails', { loading: true });
-
-      case USER_DETAILS.SUCCESS:
-        return updateState(state, 'userDetails', {
-          loading: false,
-          user: payload,
-          error: null,
-        });
-
-      case USER_DETAILS.FAIL:
-        return updateState(state, 'userDetails', {
-          loading: false,
-          error: payload,
-        });
-
-      case USER_PROFILE_UPDATE.REQUEST:
-        return updateState(state, 'userProfileUpdate', {
-          loading: true,
-          success: false,
-          error: null,
-        });
-
-      case USER_PROFILE_UPDATE.SUCCESS:
-        return updateState(state, 'userProfileUpdate', {
-          loading: false,
-          success: true,
-          error: null,
-        });
-
-      case USER_PROFILE_UPDATE.FAIL:
-        return updateState(state, 'userProfileUpdate', {
-          loading: false,
-          success: false,
-          error: payload,
-        });
-
-      default:
-        return state;
-    }
+  // If action type is not in stateKeysMap, return the current state
+  if (!stateKeysMap[type]) {
+    return state;
   }
 
-  return state;
+  switch (type) {
+    case USER_AUTH.LOGIN_REQUEST:
+    case USER_REGISTER.REQUEST:
+      return updateState(state, stateKeysMap[type], {
+        loading: true,
+        error: null,
+        userInfo: null,
+      });
+
+    case USER_AUTH.LOGIN_SUCCESS:
+    case USER_REGISTER.SUCCESS:
+      return updateState(state, stateKeysMap[type], {
+        loading: false,
+        userInfo: payload,
+        error: null,
+      });
+
+    case USER_AUTH.LOGIN_FAIL:
+    case USER_REGISTER.FAIL:
+      return updateState(state, stateKeysMap[type], {
+        loading: false,
+        error: payload,
+        userInfo: null,
+      });
+
+    case USER_AUTH.LOGOUT:
+      return updateState(state, 'userLogin', {
+        userInfo: null,
+        loading: false,
+        error: null,
+      });
+
+    case USER_DETAILS.REQUEST:
+      return updateState(state, 'userDetails', { loading: true });
+
+    case USER_DETAILS.SUCCESS:
+      return updateState(state, 'userDetails', {
+        loading: false,
+        user: payload,
+        error: null,
+      });
+
+    case USER_DETAILS.FAIL:
+      return updateState(state, 'userDetails', {
+        loading: false,
+        error: payload,
+      });
+
+    case USER_PROFILE_UPDATE.REQUEST:
+      return updateState(state, 'userProfileUpdate', {
+        loading: true,
+        success: false,
+        error: null,
+      });
+
+    case USER_PROFILE_UPDATE.SUCCESS:
+      return updateState(state, 'userProfileUpdate', {
+        loading: false,
+        success: true,
+        error: null,
+      });
+
+    case USER_PROFILE_UPDATE.FAIL:
+      return updateState(state, 'userProfileUpdate', {
+        loading: false,
+        success: false,
+        error: payload,
+      });
+
+    default:
+      return state;
+  }
 };
- 
+
 export { userReducer, userInitialState };

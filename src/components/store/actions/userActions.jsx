@@ -40,19 +40,18 @@ const handleError = (error, dispatch, type, navigate, redirectToLogin = false) =
 };
 
 // Actions
-export const login = async (email, password, dispatch) => {
+export const login = async (email, password, dispatch, navigate) => {
   try {
     dispatch({ type: USER_AUTH.LOGIN_REQUEST });
     const { data } = await axios.post("/api/users/login", { email, password });
     dispatch({ type: USER_AUTH.LOGIN_SUCCESS, payload: data });
     saveUserInfoToStorage(data);
-    return data; // باید داده‌ها را بازگرداند
+    return data;
   } catch (error) {
-    const errorMessage = getErrorMessage(error);
-    dispatch({ type: USER_AUTH.LOGIN_FAIL, payload: errorMessage });
-    throw error; // خطا را مدیریت کنید
+    handleError(error, dispatch, USER_AUTH.LOGIN_FAIL, navigate, true);
   }
 };
+
 
 
 
@@ -72,14 +71,14 @@ export const register = async (name, email, password, dispatch, navigate) => {
 export const getUserDetails = async (id, dispatch, navigate) => {
   try {
     dispatch({ type: USER_DETAILS.REQUEST });
-    const config = getConfig(); // اضافه کردن توکن به هدرها
-    const { data } = await axios.get(`/api/users/${id}/profile`, config); // استفاده از userId در مسیر
+    const config = getConfig();
+    const { data } = await axios.get(`/api/users/${id}/profile`, config);
     dispatch({ type: USER_DETAILS.SUCCESS, payload: data });
   } catch (error) {
-    handleError(error, dispatch, USER_DETAILS.FAIL, navigate);
+    handleError(error, dispatch, USER_DETAILS.FAIL, navigate, true);
   }
 };
-;
+
 
 export const updateProfile = async (userData, dispatch, navigate) => {
   try {
