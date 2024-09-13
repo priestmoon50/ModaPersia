@@ -60,16 +60,17 @@ export default function Login() {
         try {
           setLoginState((prev) => ({ ...prev, loading: true }));
           const isValid = await verifyToken(token);
-          if (!isValid) {
+          if (isValid) {
+            // هدایت به صفحه پروفایل اگر توکن معتبر است
+            navigate("/profile", { replace: true });
+          } else {
             logoutUser();
             toast.error("Your session has expired. Please log in again.");
-            navigate("/login");
           }
         } catch (error) {
           console.error("Error validating token:", error);
           logoutUser();
           toast.error("Error validating token. Please log in again.");
-          navigate("/login");
         } finally {
           setLoginState((prev) => ({ ...prev, loading: false }));
         }
@@ -95,8 +96,12 @@ export default function Login() {
       setLoginState((prev) => ({ ...prev, loading: true }));
       const response = await loginUser(data.username, data.password);
       if (response && response.token) {
-        // به جای ذخیره توکن در LocalStorage، توکن در کوکی HttpOnly ذخیره می‌شود
-        document.cookie = `authToken=${response.token}; HttpOnly; Secure; SameSite=Strict`;
+        // ذخیره توکن در localStorage
+        localStorage.setItem("authToken", response.token);
+
+        // حذف کوکی قدیمی (در صورت وجود)
+        document.cookie =
+          "authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       }
 
       if (loginState.rememberMe) {
@@ -219,7 +224,11 @@ export default function Login() {
                     }
                     edge="end"
                   >
-                    {loginState.showPassword ? <VisibilityOff /> : <Visibility />}
+                    {loginState.showPassword ? (
+                      <VisibilityOff />
+                    ) : (
+                      <Visibility />
+                    )}
                   </IconButton>
                 ),
               }}
@@ -286,7 +295,21 @@ export default function Login() {
           }))
         }
       >
-        <ForgetPassword />
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 400,
+            bgcolor: "background.paper",
+            border: "2px solid #000",
+            boxShadow: 24,
+            p: 4,
+          }}
+        >
+          <ForgetPassword />
+        </Box>
       </Modal>
 
       <ToastContainer />

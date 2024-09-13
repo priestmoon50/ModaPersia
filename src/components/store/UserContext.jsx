@@ -1,21 +1,25 @@
-import React, { createContext, useReducer, useCallback, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useReducer,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import axios from "axios";
-import {
-  USER_LOGIN_REQUEST,
-  USER_LOGIN_SUCCESS,
-  USER_LOGIN_FAIL,
-  USER_LOGOUT,
-  USER_UPDATE_PROFILE_REQUEST,
-  USER_UPDATE_PROFILE_SUCCESS,
-  USER_UPDATE_PROFILE_FAIL,
-} from "./constants/userConstants";
+import { USER_AUTH, USER_PROFILE_UPDATE } from "./constants/userConstants";
 import { userReducer, userInitialState } from "./reducers/userReducer";
-import { login, logout, register, getUserDetails, updateProfile } from "./actions/userActions";
+import {
+  login,
+  logout,
+  register,
+  getUserDetails,
+  updateProfile,
+} from "./actions/userActions";
 
-// ایجاد Context برای User
+// User Context
 const UserContext = createContext();
 
-// Utility function برای مدیریت localStorage
+// Utility functions
 const getUserInfoFromStorage = () => {
   try {
     const userInfo = localStorage.getItem("userInfo");
@@ -26,67 +30,60 @@ const getUserInfoFromStorage = () => {
   }
 };
 
-// Utility function برای ذخیره‌سازی اطلاعات در localStorage
 const saveUserInfoToStorage = (userInfo) => {
   if (userInfo) {
-    try {
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
-    } catch (error) {
-      console.error("Error saving userInfo to localStorage:", error);
-    }
+    localStorage.setItem("userInfo", JSON.stringify(userInfo));
+    console.log("User info saved to localStorage:", userInfo); // اضافه کردن لاگ برای بررسی
   }
 };
 
-// Utility function برای پاک‌سازی localStorage
-const clearUserInfoFromStorage = () => {
-  localStorage.removeItem("userInfo");
-};
+const clearUserInfoFromStorage = () => localStorage.removeItem("userInfo");
 
-// Utility function برای مدیریت خطاها
 const handleError = (error, customMessage = "") => {
-  console.error(`${customMessage} Error:`, error);
-  return error.response?.data?.message || error.message || "An unexpected error occurred";
+  return error.response?.data?.message || error.message || customMessage;
 };
 
+// User Provider
 const UserProvider = ({ children }) => {
   const [state, dispatch] = useReducer(userReducer, userInitialState);
   const [error, setError] = useState(null);
 
-  // بارگذاری اطلاعات کاربر از localStorage در بارگذاری اولیه
-  useEffect(() => {
-    const parsedUserInfo = getUserInfoFromStorage();
-    if (parsedUserInfo) {
-      console.log("Loading user info from localStorage:", parsedUserInfo);
-      dispatch({ type: USER_LOGIN_SUCCESS, payload: parsedUserInfo });
-    }
-  }, []);
+// Load user info from localStorage on initial load
+useEffect(() => {
+  const userInfo = getUserInfoFromStorage();
+  
+  if (userInfo) {
+    console.log("UserContext! User info loaded from localStorage:", userInfo);
+    dispatch({ type: USER_AUTH.LOGIN_SUCCESS, payload: userInfo });
+  } else {
+    // حذف یا بهینه سازی لاگ در صورت عدم وجود اطلاعات
+    console.log("UserContext! No user info found in localStorage.");
+  }
+}, []);
 
-  // تنظیم هدر Authorization برای درخواست‌های Axios در صورت موجود بودن توکن کاربر
+
+  // Set Axios authorization header
   useEffect(() => {
-    const userInfo = state.userLogin.userInfo;
+    const { userInfo } = state.userLogin;
     if (userInfo?.token) {
-      const requestInterceptor = axios.interceptors.request.use(
-        (config) => {
-          config.headers.Authorization = `Bearer ${userInfo.token}`;
-          return config;
-        },
-        (error) => Promise.reject(error)
-      );
-      return () => axios.interceptors.request.eject(requestInterceptor);
+      const interceptor = axios.interceptors.request.use((config) => {
+        config.headers.Authorization = `Bearer ${userInfo.token}`;
+        return config;
+      });
+      return () => axios.interceptors.request.eject(interceptor);
     }
-  }, [state.userLogin.userInfo]);
+  }, [state.userLogin]);
 
-  // تابع logout برای کاربر
   const logoutUser = useCallback(() => {
-    dispatch({ type: USER_LOGOUT });
     clearUserInfoFromStorage();
+    dispatch({ type: USER_AUTH.LOGOUT });
     logout(dispatch);
   }, [dispatch]);
 
-  // بررسی انقضای توکن
+  // Handle token expiration
   useEffect(() => {
     const checkTokenExpiration = () => {
-      const userInfo = state.userLogin.userInfo;
+      const { userInfo } = state.userLogin;
       if (userInfo?.token && userInfo.tokenExpiration) {
         const tokenExpiration = new Date(userInfo.tokenExpiration).getTime();
         if (Date.now() >= tokenExpiration) {
@@ -97,17 +94,17 @@ const UserProvider = ({ children }) => {
     };
 
     checkTokenExpiration();
-    const intervalId = setInterval(checkTokenExpiration, 60000); // هر دقیقه بررسی می‌شود
+    const intervalId = setInterval(checkTokenExpiration, 60000); // Check every minute
     return () => clearInterval(intervalId);
-  }, [state.userLogin.userInfo, logoutUser]);
+  }, [state.userLogin, logoutUser]);
 
-  // اکشن ثبت‌نام کاربر
+  // Register user action
   const registerUser = useCallback(
     async (name, email, password) => {
       try {
         const response = await register(name, email, password, dispatch);
         saveUserInfoToStorage(response);
-        dispatch({ type: USER_LOGIN_SUCCESS, payload: response });
+        dispatch({ type: USER_AUTH.LOGIN_SUCCESS, payload: response });
       } catch (error) {
         const errorMessage = handleError(error, "Failed to register user");
         setError(errorMessage);
@@ -117,7 +114,7 @@ const UserProvider = ({ children }) => {
     [dispatch]
   );
 
-  // اکشن دریافت جزئیات کاربر
+  // Get user details action
   const getUserDetailsAction = useCallback(
     async (id) => {
       try {
@@ -130,18 +127,17 @@ const UserProvider = ({ children }) => {
     [dispatch]
   );
 
-  // اکشن ورود کاربر
+  // Login user action
   const loginUser = useCallback(
     async (email, password) => {
       try {
-        dispatch({ type: USER_LOGIN_REQUEST });
+        dispatch({ type: USER_AUTH.LOGIN_REQUEST });
         const response = await login(email, password, dispatch);
-        console.log("Login response:", response); // لاگ گرفتن از پاسخ لاگین
         saveUserInfoToStorage(response);
-        dispatch({ type: USER_LOGIN_SUCCESS, payload: response });
+        dispatch({ type: USER_AUTH.LOGIN_SUCCESS, payload: response });
       } catch (error) {
         const errorMessage = handleError(error, "Failed to login user");
-        dispatch({ type: USER_LOGIN_FAIL, payload: errorMessage });
+        dispatch({ type: USER_AUTH.LOGIN_FAIL, payload: errorMessage });
         setError(errorMessage);
         throw new Error(errorMessage);
       }
@@ -149,25 +145,23 @@ const UserProvider = ({ children }) => {
     [dispatch]
   );
 
-  // اکشن به‌روزرسانی پروفایل کاربر
+  // Update user profile action
   const updateUserProfile = useCallback(
     async (user) => {
       try {
-        dispatch({ type: USER_UPDATE_PROFILE_REQUEST });
-        const response = await updateProfile(user, dispatch); // کل user را به عنوان userData ارسال کنید
+        dispatch({ type: USER_PROFILE_UPDATE.REQUEST });
+        const response = await updateProfile(user, dispatch);
         saveUserInfoToStorage(response);
-        dispatch({ type: USER_UPDATE_PROFILE_SUCCESS, payload: response });
+        dispatch({ type: USER_PROFILE_UPDATE.SUCCESS, payload: response });
       } catch (error) {
         const errorMessage = handleError(error, "Failed to update profile");
-        dispatch({ type: USER_UPDATE_PROFILE_FAIL, payload: errorMessage });
+        dispatch({ type: USER_PROFILE_UPDATE.FAIL, payload: errorMessage });
         setError(errorMessage);
       }
     },
     [dispatch]
   );
-  
 
-  
   return (
     <UserContext.Provider
       value={{

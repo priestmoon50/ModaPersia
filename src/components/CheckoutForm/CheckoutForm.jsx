@@ -35,14 +35,17 @@ const CheckoutForm = () => {
   const onSubmit = async (data) => {
     setLoading(true);
     setError(null);
-
+  
     try {
       // گرفتن توکن از localStorage
+      console.log("Auth token:", localStorage.getItem("authToken"));
       const token = localStorage.getItem("authToken");
       if (!token) {
-        throw new Error("Token not found. Please log in again.");
+        alert("You are not logged in. Please log in to continue.");
+        navigate("/login");
+        return;  // جلوگیری از ارسال درخواست
       }
-
+  
       const orderData = {
         customer: {
           name: data.name,
@@ -59,29 +62,29 @@ const CheckoutForm = () => {
           }),
         },
         items: cartItems,
-        total: calculateTotal,
+        total: parseFloat(calculateTotal),
       };
-
+  
       // ارسال اطلاعات سفارش به API با توکن
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // اضافه کردن توکن به هدر
+          Authorization: `Bearer ${token}`,  // اضافه کردن توکن به هدر
         },
         body: JSON.stringify(orderData),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to place order.");
       }
-
+  
       const savedOrder = await response.json();
-
+  
       // ذخیره جزئیات سفارش در localStorage
       localStorage.setItem("orderDetails", JSON.stringify(savedOrder));
-
+  
       // پاک کردن سبد خرید و هدایت به صفحه تایید سفارش
       clearCart();
       navigate("/order-confirmation");
@@ -95,6 +98,7 @@ const CheckoutForm = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <Container maxWidth="md">
@@ -118,7 +122,7 @@ const CheckoutForm = () => {
         <Box sx={{ mb: 3 }}>
           <PaymentForm control={control} />
         </Box>
-
+ 
         {/* خلاصه سبد خرید */}
         <Box sx={{ mt: 4 }}>
           <Typography variant="h6">Order Summary</Typography>
@@ -126,7 +130,6 @@ const CheckoutForm = () => {
             <Typography key={index}>
               {item.name} ({item.qty || 1} x €{(item.price || 0).toFixed(2)}) =
               €{((item.qty || 1) * (item.price || 0)).toFixed(2)}
-              
             </Typography>
           ))}
 

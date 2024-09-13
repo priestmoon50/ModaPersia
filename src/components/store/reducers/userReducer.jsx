@@ -1,153 +1,102 @@
-import {
-  USER_LOGIN_REQUEST,
-  USER_LOGIN_SUCCESS,
-  USER_LOGIN_FAIL,
-  USER_LOGOUT,
-  USER_REGISTER_REQUEST,
-  USER_REGISTER_SUCCESS,
-  USER_REGISTER_FAIL,
-  USER_DETAILS_REQUEST,
-  USER_DETAILS_SUCCESS,
-  USER_DETAILS_FAIL,
-  USER_UPDATE_PROFILE_REQUEST,
-  USER_UPDATE_PROFILE_SUCCESS,
-  USER_UPDATE_PROFILE_FAIL,
+import { 
+  USER_AUTH, 
+  USER_REGISTER, 
+  USER_DETAILS, 
+  USER_PROFILE_UPDATE 
 } from "../constants/userConstants";
 
-// وضعیت اولیه `userInitialState`
+// Initial state
 const userInitialState = {
-  userLogin: {
-    userInfo: null, // مقدار پیش‌فرض null
-    loading: false,
-    error: null,
-  },
-  userRegister: {
-    loading: false,
-    userInfo: null,
-    error: null,
-  },
-  userDetails: {
-    loading: false,
-    user: null,
-    error: null,
-  },
-
-  userProfileUpdate: {
-    loading: false,
-    success: false,
-    error: null,
-  },
+  userLogin: { userInfo: null, loading: false, error: null },
+  userRegister: { loading: false, userInfo: null, error: null },
+  userDetails: { loading: false, user: null, error: null },
+  userProfileUpdate: { loading: false, success: false, error: null },
 };
 
+// Helper function to update state
+const updateState = (state, key, updates) => ({
+  ...state,
+  [key]: { ...state[key], ...updates }
+});
 
-// تعریف `userReducer` برای مدیریت اکشن‌های مربوط به کاربر
+// Reducer
 const userReducer = (state = userInitialState, action) => {
-  switch (action.type) {
-    // Login و Register هر دو مشابه هستند، پس ترکیب می‌کنیم
-    case USER_LOGIN_REQUEST:
-    case USER_REGISTER_REQUEST:
-      return {
-        ...state,
-        [action.type === USER_LOGIN_REQUEST ? "userLogin" : "userRegister"]: {
-          loading: true,
-          error: null,
-          userInfo: null,
-        },
-      };
+  const { type, payload } = action;
 
-    // موفقیت در Login و Register
-    case USER_LOGIN_SUCCESS:
-    case USER_REGISTER_SUCCESS:
-      return {
-        ...state,
-        [action.type === USER_LOGIN_SUCCESS ? "userLogin" : "userRegister"]: {
-          loading: false,
-          userInfo: action.payload,
-          error: null,
-        },
-      };
+  switch (type) {
+    // Handle login and register requests
+    case USER_AUTH.LOGIN_REQUEST:
+    case USER_REGISTER.REQUEST:
+      return updateState(state, type === USER_AUTH.LOGIN_REQUEST ? 'userLogin' : 'userRegister', {
+        loading: true,
+        error: null,
+        userInfo: null,
+      });
 
-    // شکست در Login و Register
-    case USER_LOGIN_FAIL:
-    case USER_REGISTER_FAIL:
-      return {
-        ...state,
-        [action.type === USER_LOGIN_FAIL ? "userLogin" : "userRegister"]: {
-          loading: false,
-          error: action.payload,
-          userInfo: null,
-        },
-      };
+    // Handle login and register success
+    case USER_AUTH.LOGIN_SUCCESS:
+    case USER_REGISTER.SUCCESS:
+      return updateState(state, type === USER_AUTH.LOGIN_SUCCESS ? 'userLogin' : 'userRegister', {
+        loading: false,
+        userInfo: payload,
+        error: null,
+      });
 
-    // Logout کاربر
-    case USER_LOGOUT:
-      return {
-        ...state,
-        userLogin: {
-          userInfo: null,
-          loading: false,
-          error: null,
-        },
-      };
+    // Handle login and register fail
+    case USER_AUTH.LOGIN_FAIL:
+    case USER_REGISTER.FAIL:
+      return updateState(state, type === USER_AUTH.LOGIN_FAIL ? 'userLogin' : 'userRegister', {
+        loading: false,
+        error: payload,
+        userInfo: null,
+      });
 
-    // درخواست، موفقیت و شکست در گرفتن جزئیات کاربر
-    case USER_DETAILS_REQUEST:
-      return {
-        ...state,
-        userDetails: {
-          ...state.userDetails,
-          loading: true,
-        },
-      };
-    case USER_DETAILS_SUCCESS:
-      return {
-        ...state,
-        userDetails: {
-          ...state.userDetails,
-          loading: false,
-          user: action.payload,
-          error: null,
-        },
-      };
-    case USER_DETAILS_FAIL:
-      return {
-        ...state,
-        userDetails: {
-          ...state.userDetails,
-          loading: false,
-          error: action.payload,
-        },
-      };
+    // Handle user logout
+    case USER_AUTH.LOGOUT:
+      return updateState(state, 'userLogin', {
+        userInfo: null,
+        loading: false,
+        error: null,
+      });
 
+    // Handle fetching user details
+    case USER_DETAILS.REQUEST:
+      return updateState(state, 'userDetails', { loading: true });
 
-      // افزودن اکشن‌های جدید
-    case USER_UPDATE_PROFILE_REQUEST:
-      return {
-        ...state,
-        userProfileUpdate: {
-          loading: true,
-          success: false,
-          error: null,
-        },
-      };
-    case USER_UPDATE_PROFILE_SUCCESS:
-      return {
-        ...state,
-        userProfileUpdate: {
-          loading: false,
-          success: true,
-          error: null,
-        },
-      };
-    case USER_UPDATE_PROFILE_FAIL:
-      return {
-        ...state,
-        userProfileUpdate: {
-          loading: false,
-          success: false,
-          error: action.payload,
-        },
-      };
+    case USER_DETAILS.SUCCESS:
+      return updateState(state, 'userDetails', {
+        loading: false,
+        user: payload,
+        error: null,
+      });
+
+    case USER_DETAILS.FAIL:
+      return updateState(state, 'userDetails', {
+        loading: false,
+        error: payload,
+      });
+
+    // Handle profile update requests
+    case USER_PROFILE_UPDATE.REQUEST:
+      return updateState(state, 'userProfileUpdate', {
+        loading: true,
+        success: false,
+        error: null,
+      });
+
+    case USER_PROFILE_UPDATE.SUCCESS:
+      return updateState(state, 'userProfileUpdate', {
+        loading: false,
+        success: true,
+        error: null,
+      });
+
+    case USER_PROFILE_UPDATE.FAIL:
+      return updateState(state, 'userProfileUpdate', {
+        loading: false,
+        success: false,
+        error: payload,
+      });
 
     default:
       return state;
