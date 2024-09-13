@@ -23,7 +23,7 @@ const app = express();
 
 // Setting up CORS
 const corsOptions = {
-  origin: "http://localhost:3000", // Allow requests from this specific origin
+   origin: ["http://localhost:3000", "http://localhost:5000"], // اضافه کردن چند منبع
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS" ,],
   allowedHeaders: [
     "Content-Type",
@@ -46,7 +46,7 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "https://js.stripe.com/v3"],
-        connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5000", "https://api.stripe.com"],
+        connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5000", "http://localhost:3001", "https://api.stripe.com"],
         imgSrc: ["'self'", "data:", "blob:", "http://localhost:3000", "http://localhost:5000/uploads"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         frameSrc: ["'self'", "https://js.stripe.com"],
