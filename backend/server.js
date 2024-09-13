@@ -23,7 +23,7 @@ const app = express();
 
 // Setting up CORS
 const corsOptions = {
-   origin: ["http://localhost:3000", "http://localhost:5000"], // اضافه کردن چند منبع
+   origin: ["http://localhost:3000", "http://localhost:5000" , "http://localhost:3001",], // اضافه کردن چند منبع
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS" ,],
   allowedHeaders: [
     "Content-Type",
@@ -31,7 +31,7 @@ const corsOptions = {
     "Accept",
     "X-Requested-With",
   ],
-  credentials: true,
+  credentials: true , // If you need to allow cookies
 };
 
 app.use(cors(corsOptions));

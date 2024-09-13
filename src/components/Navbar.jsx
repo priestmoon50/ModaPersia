@@ -30,7 +30,10 @@ import CartContext from "./store/CartContext";
 import { UserContext } from "./store/UserContext";
 
 const Navbar = () => {
-  const { state: { userLogin }, logoutUser } = useContext(UserContext);
+  const {
+    state: { userLogin },
+    logoutUser,
+  } = useContext(UserContext);
   const { cartItems } = useContext(CartContext);
   const { toggleTheme, mode } = useTheme();
   const { t } = useTranslation();
@@ -43,25 +46,36 @@ const Navbar = () => {
   const isAdmin = user?.isAdmin || false;
   const totalItemsInCart = cartItems.reduce((total, item) => total + item.quantity, 0);
 
+  // بررسی وضعیت لاگین کاربر و token
   useEffect(() => {
     const token = localStorage.getItem("authToken");
+    console.log("authToken in localStorage:", token); // لاگ گرفتن از توکن
+  
     if (!token && !user) {
       console.log("Navbar: User is not logged in");
     }
   }, [user]);
+  
 
+  // جلوگیری از اسکرول هنگام باز بودن منوی کشویی
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? "hidden" : "auto";
-    return () => { document.body.style.overflow = "auto"; };
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, [drawerOpen]);
 
   const handleDrawerToggle = () => setDrawerOpen((prev) => !prev);
+  
   const handleLogout = () => {
     logoutUser();
     navigate("/login");
   };
+
   const handleProfileMenuClick = (event) => setAnchorEl(event.currentTarget);
+  
   const handleProfileMenuClose = () => setAnchorEl(null);
+  
   const handleProfileNavigate = (path) => {
     handleProfileMenuClose();
     navigate(path);
@@ -78,17 +92,29 @@ const Navbar = () => {
   const DrawerContent = () => (
     <Box sx={{ width: 250 }} role="presentation" onClick={handleDrawerToggle} onKeyDown={handleDrawerToggle}>
       <List>
-        <ListItem button component={Link} to="/products"><ListItemText primary={t("products")} /></ListItem>
+        <ListItem button component={Link} to="/products">
+          <ListItemText primary={t("products")} />
+        </ListItem>
         {user ? (
           <>
-            <ListItem button component={Link} to="/profile"><ListItemText primary={t("profile")} /></ListItem>
-            <ListItem button component={Link} to="/favorites"><ListItemText primary={t("favorites")} /></ListItem>
-            <ListItem button onClick={handleLogout}><ListItemText primary={t("logout")} /></ListItem>
+            <ListItem button component={Link} to="/profile">
+              <ListItemText primary={t("profile")} />
+            </ListItem>
+            <ListItem button component={Link} to="/favorites">
+              <ListItemText primary={t("favorites")} />
+            </ListItem>
+            <ListItem button onClick={handleLogout}>
+              <ListItemText primary={t("logout")} />
+            </ListItem>
           </>
         ) : (
           <>
-            <ListItem button component={Link} to="/login"><ListItemText primary={t("login")} /></ListItem>
-            <ListItem button component={Link} to="/register"><ListItemText primary={t("register")} /></ListItem>
+            <ListItem button component={Link} to="/login">
+              <ListItemText primary={t("login")} />
+            </ListItem>
+            <ListItem button component={Link} to="/register">
+              <ListItemText primary={t("register")} />
+            </ListItem>
           </>
         )}
       </List>
@@ -177,8 +203,12 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Button color="inherit" component={Link} to="/login">{t("login")}</Button>
-                <Button color="inherit" component={Link} to="/register">{t("register")}</Button>
+                <Button color="inherit" component={Link} to="/login">
+                  {t("login")}
+                </Button>
+                <Button color="inherit" component={Link} to="/register">
+                  {t("register")}
+                </Button>
               </>
             )}
             <IconButton color="inherit" onClick={toggleTheme}>

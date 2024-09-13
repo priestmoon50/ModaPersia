@@ -6,15 +6,15 @@ import React, {
   useState,
 } from "react";
 import axios from "axios";
-import { USER_AUTH, USER_PROFILE_UPDATE } from "./constants/userConstants";
+import { USER_AUTH } from "./constants/userConstants";
 import { userReducer, userInitialState } from "./reducers/userReducer";
 import {
-  login,
-  logout,
-  register,
+  login,  // تغییر به استفاده از اکشن login از userActions.jsx
+  logout, // استفاده از اکشن logout
+  register, // استفاده از اکشن register
   getUserDetails,
   updateProfile,
-} from "./actions/userActions";
+} from "./actions/userActions"; // اکشن‌ها را وارد کنید
 
 // User Context
 const UserContext = createContext();
@@ -30,18 +30,6 @@ const getUserInfoFromStorage = () => {
   }
 };
 
-const saveUserInfoToStorage = (userInfo) => {
-  if (userInfo) {
-    localStorage.setItem("userInfo", JSON.stringify(userInfo));
-    console.log("User info saved to localStorage:", userInfo); // اضافه کردن لاگ برای بررسی
-  }
-};
-
-const clearUserInfoFromStorage = () => localStorage.removeItem("userInfo");
-
-const handleError = (error, customMessage = "") => {
-  return error.response?.data?.message || error.message || customMessage;
-};
 
 // User Provider
 const UserProvider = ({ children }) => {
@@ -53,8 +41,13 @@ useEffect(() => {
   const userInfo = getUserInfoFromStorage();
   
   if (userInfo) {
-    console.log("UserContext! User info loaded from localStorage:", userInfo);
+    console.log("UserContext:before ditpatch User info loaded from localStorage:", userInfo); // لاگ گرفتن از اطلاعات کاربر
     dispatch({ type: USER_AUTH.LOGIN_SUCCESS, payload: userInfo });
+
+    
+ // اضافه کردن توکن به هدر
+    axios.defaults.headers.common["Authorization"] = `Bearer ${userInfo.token}`;
+    console.log("UserContext!after dispatch User info loaded from localStorage:", userInfo);
   } else {
     // حذف یا بهینه سازی لاگ در صورت عدم وجود اطلاعات
     console.log("UserContext! No user info found in localStorage.");
@@ -71,13 +64,12 @@ useEffect(() => {
         return config;
       });
       return () => axios.interceptors.request.eject(interceptor);
+      
     }
   }, [state.userLogin]);
 
   const logoutUser = useCallback(() => {
-    clearUserInfoFromStorage();
-    dispatch({ type: USER_AUTH.LOGOUT });
-    logout(dispatch);
+    logout(dispatch); // فراخوانی اکشن logout
   }, [dispatch]);
 
   // Handle token expiration
@@ -86,81 +78,60 @@ useEffect(() => {
       const { userInfo } = state.userLogin;
       if (userInfo?.token && userInfo.tokenExpiration) {
         const tokenExpiration = new Date(userInfo.tokenExpiration).getTime();
-        if (Date.now() >= tokenExpiration) {
+        const now = Date.now();
+        const timeRemaining = tokenExpiration - now;
+        if (timeRemaining <= 0) {
           logoutUser();
           setError("Session expired. Please log in again.");
+        } else {
+          setTimeout(() => {
+            logoutUser();
+            setError("Session expired. Please log in again.");
+          }, timeRemaining);
         }
       }
     };
-
+  
     checkTokenExpiration();
-    const intervalId = setInterval(checkTokenExpiration, 60000); // Check every minute
-    return () => clearInterval(intervalId);
   }, [state.userLogin, logoutUser]);
+  
 
   // Register user action
-  const registerUser = useCallback(
-    async (name, email, password) => {
-      try {
-        const response = await register(name, email, password, dispatch);
-        saveUserInfoToStorage(response);
-        dispatch({ type: USER_AUTH.LOGIN_SUCCESS, payload: response });
-      } catch (error) {
-        const errorMessage = handleError(error, "Failed to register user");
-        setError(errorMessage);
-        throw new Error(errorMessage);
-      }
-    },
-    [dispatch]
-  );
+  const registerUser = useCallback(async (name, email, password) => {
+    try {
+      await register(name, email, password, dispatch);
+    } catch (error) {
+      setError("Registration failed");
+    }
+  }, [dispatch]);
 
   // Get user details action
-  const getUserDetailsAction = useCallback(
-    async (id) => {
-      try {
-        await getUserDetails(id, dispatch);
-      } catch (error) {
-        const errorMessage = handleError(error, "Failed to fetch user details");
-        setError(errorMessage);
-      }
-    },
-    [dispatch]
-  );
+  const getUserDetailsAction = useCallback(async (id) => {
+    try {
+      await getUserDetails(id, dispatch);
+    } catch (error) {
+      setError("Failed to fetch user details");
+    }
+  }, [dispatch]);
 
-  // Login user action
-  const loginUser = useCallback(
-    async (email, password) => {
-      try {
-        dispatch({ type: USER_AUTH.LOGIN_REQUEST });
-        const response = await login(email, password, dispatch);
-        saveUserInfoToStorage(response);
-        dispatch({ type: USER_AUTH.LOGIN_SUCCESS, payload: response });
-      } catch (error) {
-        const errorMessage = handleError(error, "Failed to login user");
-        dispatch({ type: USER_AUTH.LOGIN_FAIL, payload: errorMessage });
-        setError(errorMessage);
-        throw new Error(errorMessage);
-      }
-    },
-    [dispatch]
-  );
+ // اکشن loginUser به عنوان login از userActions استفاده می‌شود
+ const loginUser = useCallback(async (email, password) => {
+  try {
+    await login(email, password, dispatch);
+  } catch (error) {
+    setError("Login failed");
+    console.error("Login error:", error);
+  }
+}, [dispatch]);
 
   // Update user profile action
-  const updateUserProfile = useCallback(
-    async (user) => {
-      try {
-        dispatch({ type: USER_PROFILE_UPDATE.REQUEST });
-        const response = await updateProfile(user, dispatch);
-        saveUserInfoToStorage(response);
-        dispatch({ type: USER_PROFILE_UPDATE.SUCCESS, payload: response });
-      } catch (error) {
-        const errorMessage = handleError(error, "Failed to update profile");
-        dispatch({ type: USER_PROFILE_UPDATE.FAIL, payload: errorMessage });
-        setError(errorMessage);
-      }
-    },
-    [dispatch]
-  );
+  const updateUserProfile = useCallback(async (user) => {
+    try {
+      await updateProfile(user, dispatch);
+    } catch (error) {
+      setError("Failed to update profile");
+    }
+  }, [dispatch]);
 
   return (
     <UserContext.Provider

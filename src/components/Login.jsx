@@ -6,6 +6,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useTheme } from "@mui/material/styles";
+import axios from "axios";
 import {
   Button,
   Checkbox,
@@ -26,9 +27,11 @@ export default function Login() {
   const navigate = useNavigate();
   const { state, loginUser, logoutUser, verifyToken } = useContext(UserContext);
   const { userLogin } = state;
+  console.log("Login component: userLogin state:", userLogin);
   const user = userLogin?.userInfo;
   const isLoggedIn = !!user;
-
+  console.log("Login component: User info:", user);
+  console.log("Login component: isLoggedIn:", isLoggedIn);
   // مدیریت حالت‌های محلی (Local State)
   const [loginState, setLoginState] = useState({
     showPassword: false,
@@ -36,6 +39,14 @@ export default function Login() {
     showForgetPassword: false,
     loading: false,
   });
+  const [authToken, setAuthToken] = useState(null); // ایجاد setAuthToken
+  // تنظیم توکن در درخواست‌های Axios پس از ورود کاربر
+  useEffect(() => {
+    if (authToken) {
+      // اگر توکن موجود بود، آن را به عنوان هدر Authorization در axios قرار می‌دهیم
+      axios.defaults.headers.common["Authorization"] = `Bearer ${authToken}`;
+    }
+  }, [authToken]);
 
   // اعتبارسنجی فرم با استفاده از yup
   const schema = yup.object().shape({
@@ -55,11 +66,13 @@ export default function Login() {
   // اعتبارسنجی توکن JWT در بارگذاری اولیه صفحه
   useEffect(() => {
     const token = localStorage.getItem("authToken");
+    console.log("Loin component : JWT token in localStorage:", token);
     if (token) {
       const checkTokenValidity = async () => {
         try {
           setLoginState((prev) => ({ ...prev, loading: true }));
           const isValid = await verifyToken(token);
+          console.log("Loin component : Token validity:", isValid);
           if (isValid) {
             // هدایت به صفحه پروفایل اگر توکن معتبر است
             navigate("/profile", { replace: true });
@@ -94,14 +107,22 @@ export default function Login() {
   const onSubmit = async (data) => {
     try {
       setLoginState((prev) => ({ ...prev, loading: true }));
+
       const response = await loginUser(data.username, data.password);
+
       if (response && response.token) {
-        // ذخیره توکن در localStorage
+        // ذخیره توکن در state (برای استفاده سریع)
+        setAuthToken(response.token);
+
+        // ذخیره توکن در localStorage (برای استفاده بعدی)
         localStorage.setItem("authToken", response.token);
 
-        // حذف کوکی قدیمی (در صورت وجود)
-        document.cookie =
-          "authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        // ذخیره refresh token در کوکی HTTP-Only سمت سرور
+        document.cookie = `refreshToken=${response.refreshToken}; HttpOnly; Secure; SameSite=Strict`;
+
+        // هدایت به صفحه پروفایل
+        toast.success("Login successful!");
+        navigate("/profile", { replace: true });
       }
 
       if (loginState.rememberMe) {
@@ -109,14 +130,8 @@ export default function Login() {
       } else {
         localStorage.removeItem("savedUsername");
       }
-
-      toast.success("Login successful!");
-      navigate("/profile", { replace: true });
     } catch (error) {
-      console.error("Login error:", error);
-      const errorMessage =
-        error.response?.data?.message || "Invalid username or password";
-      toast.error(errorMessage);
+      toast.error("Login failed. Please try again.");
     } finally {
       setLoginState((prev) => ({ ...prev, loading: false }));
     }
