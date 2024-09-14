@@ -17,18 +17,32 @@ import productService from "../../../services/productService";
 // Helper function to create FormData from a product object
 const createProductFormData = (product) => {
   const formData = new FormData();
-  formData.append("name", product.name);
-  formData.append("description", product.description);
-  formData.append("price", product.price);
+  
+  // بررسی اینکه مقادیر خالی نباشند
+  if (!product.productId) throw new Error('Product ID is required');
+  formData.append("productId", product.productId);
+
+  formData.append("name", product.name || "");
+  formData.append("description", product.description || "");
+  formData.append("price", product.price || 0);
   formData.append("discountPercentage", product.discountPercentage || 0);
 
-  // Add sizes, colors, and images to FormData
-  if (product.sizes && product.sizes.length > 0) {
-    product.sizes.forEach(size => formData.append("sizes[]", size));
+  if (product.quantity && product.quantity > 0) {
+    formData.append("quantity", product.quantity);
+  } else {
+    throw new Error('Quantity must be a positive integer');
   }
 
   if (product.colors && product.colors.length > 0) {
     product.colors.forEach(color => formData.append("colors[]", color));
+  } else {
+    throw new Error('Color is required');
+  }
+
+  if (product.sizes && product.sizes.length > 0) {
+    product.sizes.forEach(size => formData.append("sizes[]", size));
+  } else {
+    throw new Error('Size is required');
   }
 
   if (product.images && product.images.length > 0) {
@@ -37,6 +51,8 @@ const createProductFormData = (product) => {
 
   return formData;
 };
+
+
 
 // General action handler to simplify repetitive code
 const handleAction = async (dispatch, requestType, successType, failType, action, handleError, customMessage = "") => {
