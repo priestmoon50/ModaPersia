@@ -8,21 +8,21 @@ import {
   CART_SUCCESS,
 } from "../constants/cartConstants";
 
-// Utility function برای ذخیره‌سازی سبد خرید در localStorage
+// ذخیره سبد خرید در localStorage
 const saveCartToLocalStorage = (cartItems) => {
   try {
     localStorage.setItem("cartItems", JSON.stringify(cartItems));
   } catch (error) {
-    console.error("Error saving cart to localStorage:", error);
+    console.error("خطا در ذخیره‌سازی سبد خرید در localStorage:", error);
   }
 };
 
-// Utility function برای حذف سبد خرید از localStorage
+// حذف سبد خرید از localStorage
 const clearCartFromLocalStorage = () => {
   try {
     localStorage.removeItem("cartItems");
   } catch (error) {
-    console.error("Error clearing cart from localStorage:", error);
+    console.error("خطا در حذف سبد خرید از localStorage:", error);
   }
 };
 
@@ -88,7 +88,7 @@ export const cartReducer = (state, action) => {
       if (!existingItem) {
         return {
           ...state,
-          error: "Item not found in cart",
+          error: "آیتمی با این مشخصات در سبد خرید موجود نیست",
         };
       }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import axios from 'axios';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import IconButton from '@mui/material/IconButton';
@@ -6,37 +6,21 @@ import IconButton from '@mui/material/IconButton';
 const AddToFavoritesButton = ({ productId }) => {
   const [isFavorite, setIsFavorite] = useState(false);
 
+  // درخواست‌های مربوط به favorite را موقتاً کامنت کنید
+  /*
   useEffect(() => {
-    const fetchFavoriteStatus = async () => {
-      const userInfo = localStorage.getItem('userInfo');
-
-      if (!userInfo) {
-        return;
-      }
-
+    const fetchFavorites = async () => {
       try {
-        const token = JSON.parse(userInfo).token;
-
-        const { data } = await axios.get(`/api/favorites`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // بررسی اینکه آیا `data` وجود دارد و آیا محصول در لیست علاقه‌مندی‌ها هست یا نه
-        if (data && Array.isArray(data)) {
-          const isProductFavorite = data.some((favorite) => favorite._id === productId);
-          setIsFavorite(isProductFavorite);
-        } else {
-          console.error('Invalid data format received from /api/favorites');
-        }
+        const response = await axios.get(`/api/favorites/${productId}`);
+        // مدیریت وضعیت favorite
       } catch (error) {
-        console.error('Failed to fetch favorites', error);
+        console.error("Failed to fetch favorites", error);
       }
     };
 
-    fetchFavoriteStatus();
+    fetchFavorites();
   }, [productId]);
+  */
 
   const handleFavoritesToggle = async () => {
     const userInfo = localStorage.getItem('userInfo');

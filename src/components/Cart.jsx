@@ -1,4 +1,5 @@
 import React, { useContext, useMemo, useEffect } from "react";
+
 import { Link } from "react-router-dom";
 import {
   Container,
@@ -23,7 +24,9 @@ const CartItem = ({ item, onRemove }) => {
     <ListItem key={`${item.productId}-${item.color}-${item.size}`}>
       <ListItemText
         primary={`${item.name} (${item.color}, ${item.size})`}
-        secondary={`Quantity: ${item.quantity}, Price: €${calculatePrice(item)}`}
+        secondary={`Quantity: ${item.quantity}, Price: €${calculatePrice(
+          item
+        )}`}
       />
       <ListItemSecondaryAction>
         <Button
@@ -68,7 +71,13 @@ const CartControls = () => {
 };
 
 const Cart = () => {
-  const { cartItems, removeCartItem, error, isLoading, clearError } = useContext(CartContext);
+  const {
+    cartItems,
+    removeCartItem,
+    error,
+    isLoading,
+    clearError,
+  } = useContext(CartContext);
 
   const calculateTotal = useMemo(() => {
     return cartItems
@@ -81,9 +90,10 @@ const Cart = () => {
 
   const calculateDiscountTotal = useMemo(() => {
     return cartItems.reduce((sum, item) => {
-      const discount = item.price > (item.discountPrice || item.price)
-        ? item.price - item.discountPrice
-        : 0;
+      const discount =
+        item.price > (item.discountPrice || item.price)
+          ? item.price - item.discountPrice
+          : 0;
       return sum + discount * item.quantity;
     }, 0);
   }, [cartItems]);
@@ -99,6 +109,7 @@ const Cart = () => {
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => {
+       
         clearError();
       }, 5000);
       return () => clearTimeout(timer);
@@ -126,13 +137,20 @@ const Cart = () => {
 
       {error && <Typography color="error">{error}</Typography>}
 
-      <List>
+      <List sx={{ maxWidth: "100%", overflowX: "auto" }}>
         {cartItems.map((item) => (
-          <CartItem key={`${item.productId}-${item.color}-${item.size}`} item={item} onRemove={handleRemoveFromCart} />
+          <CartItem
+            key={`${item.productId}-${item.color}-${item.size}`}
+            item={item}
+            onRemove={handleRemoveFromCart}
+          />
         ))}
       </List>
 
-      <CartSummary total={calculateTotal} discountTotal={calculateDiscountTotal} />
+      <CartSummary
+        total={calculateTotal}
+        discountTotal={calculateDiscountTotal}
+      />
       <CartControls />
     </Container>
   );

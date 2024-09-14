@@ -7,3 +7,4 @@ export const CLEAR_CART = "CLEAR_CART";
 export const LOAD_CART_FROM_STORAGE = "LOAD_CART_FROM_STORAGE";
 export const CART_LOADING = "CART_LOADING";
 export const CART_SUCCESS = "CART_SUCCESS";  // اضافه کردن این ثابت
+export const CART_LOADING_END = "CART_LOADING_END";

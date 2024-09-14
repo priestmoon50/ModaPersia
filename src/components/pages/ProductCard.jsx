@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useMemo, useContext } from "react";
+import React, { useReducer, useEffect, useMemo, useContext, useState } from "react";
 import {
   Card,
   CardContent,
@@ -10,6 +10,7 @@ import {
   Select,
   MenuItem,
   Radio,
+  TextField,
 } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -58,9 +59,9 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
   const navigate = useNavigate();
   const { control, handleSubmit } = useForm();
   const { addCartItem, error, isLoading } = useContext(CartContext);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const theme = useTheme();
 
-  // استفاده از useMemo برای بهینه‌سازی
   const sizes = useMemo(() => product.sizes || [], [product.sizes]);
   const colors = useMemo(() => product.colors || [], [product.colors]);
   const images = useMemo(() => product.images.map(normalizeImagePath), [product.images]);
@@ -85,8 +86,8 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
   }, [colors, images, sizes]);
 
   const onSubmit = async (data) => {
-    if (!state.selectedColor || !data.selectedSize) {
-      toast.error("Please select both color and size.");
+    if (!state.selectedColor || !data.selectedSize || !data.quantity || data.quantity < 1) {
+      toast.error("Please select valid size, color, and quantity.");
       return;
     }
 
@@ -99,10 +100,12 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
       productId: product._id,
       name: product.name,
       price: product.discountPrice || product.price,
-      quantity: 1,
+      quantity: data.quantity,
       color: state.selectedColor,
       size: data.selectedSize,
     };
+
+    setIsAddingToCart(true);
 
     try {
       await addCartItem(cartItem);
@@ -110,6 +113,8 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
     } catch (err) {
       console.error("Error adding product to cart:", err);
       toast.error("Failed to add product to cart. Please try again.");
+    } finally {
+      setIsAddingToCart(false);
     }
   };
 
@@ -217,196 +222,228 @@ const ProductCard = ({ product, handleDelete, userInfo }) => {
               Discounted Price: €{finalPrice.toFixed(2)}
             </Typography>
           </>
-        ) : (
-          <Typography
-            variant="body1"
-            color="textSecondary"
-            sx={{
-              fontWeight: "bold",
-              fontSize: "1.2rem",
-              marginTop: "4px",
-            }}
-          >
-            Price: €{product.price.toFixed(2)}
-          </Typography>
-        )}
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ fontWeight: "bold", marginTop: "8px" }}
+) : (
+  <Typography
+    variant="body1"
+    color="textSecondary"
+    sx={{
+      fontWeight: "bold",
+      fontSize: "1.2rem",
+      marginTop: "4px",
+    }}
+  >
+    Price: €{product.price.toFixed(2)}
+  </Typography>
+)}
+
+<Typography
+  variant="body2"
+  color="text.secondary"
+  sx={{ fontWeight: "bold", marginTop: "8px" }}
+>
+  Sizes:
+</Typography>
+
+<form onSubmit={handleSubmit(onSubmit)}>
+  <FormControl
+    sx={{
+      minWidth: "100px",
+      marginBottom: "8px",
+    }}
+  >
+    <Controller
+      name="selectedSize"
+      control={control}
+      defaultValue={state.selectedSize || ""}
+      render={({ field }) => (
+        <Select
+          {...field}
+          displayEmpty
+          inputProps={{ "aria-label": "Select size" }}
+          onChange={(e) => {
+            field.onChange(e.target.value);
+            dispatch({
+              type: ACTIONS.SET_SIZE,
+              payload: e.target.value,
+            });
+          }}
+          sx={{
+            padding: "4px",
+            fontSize: "0.8rem",
+            height: "30px",
+            minWidth: "100px",
+            borderRadius: "4px",
+          }}
         >
-          Sizes:
-        </Typography>
+          <MenuItem value="" disabled>
+            Select Size
+          </MenuItem>
+          {sizes.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size}
+            </MenuItem>
+          ))}
+        </Select>
+      )}
+    />
+  </FormControl>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <FormControl
-            sx={{
-              minWidth: "100px",
-              marginBottom: "8px",
-            }}
-          >
-            <Controller
-              name="selectedSize"
-              control={control}
-              defaultValue={state.selectedSize || ""}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  displayEmpty
-                  inputProps={{ "aria-label": "Select size" }}
-                  onChange={(e) => {
-                    field.onChange(e.target.value);
-                    dispatch({
-                      type: ACTIONS.SET_SIZE,
-                      payload: e.target.value,
-                    });
-                  }}
-                  sx={{
-                    padding: "4px",
-                    fontSize: "0.8rem",
-                    height: "30px",
-                    minWidth: "100px",
-                    borderRadius: "4px",
-                  }}
-                >
-                  <MenuItem value="" disabled>
-                    Select Size
-                  </MenuItem>
-                  {sizes.map((size) => (
-                    <MenuItem key={size} value={size}>
-                      {size}
-                    </MenuItem>
-                  ))}
-                </Select>
-              )}
-            />
-          </FormControl>
+  <Typography
+    variant="body2"
+    color="text.secondary"
+    sx={{ fontWeight: "bold", marginTop: "8px" }}
+  >
+    Colors:
+  </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ fontWeight: "bold", marginTop: "8px" }}
-          >
-            Colors:
-          </Typography>
-
-          <FormControl component="fieldset">
-            <Box display="flex" flexWrap="wrap">
-              <Controller
-                name="selectedColor"
-                control={control}
-                defaultValue={state.selectedColor || ""}
-                render={({ field }) => (
-                  <>
-                    {colors.map((color, index) => (
-                      <Radio
-                        key={index}
-                        {...field}
-                        checked={field.value === color}
-                        onChange={() => {
-                          handleColorAndImageChange(color);
-                          field.onChange(color);
-                        }}
-                        name={color}
-                        sx={{
-                          backgroundColor: color,
-                          width: 18,
-                          height: 18,
-                          borderRadius: "50%",
-                          marginRight: 2,
-                          border:
-                            field.value === color
-                              ? "2px solid #39ff14"
-                              : "none",
-                          "&:hover": {
-                            boxShadow: "0 0 5px rgba(0, 0, 0, 0.5)",
-                          },
-                          "&:focus-visible": {
-                            boxShadow: "0 0 10px #39ff14",
-                          },
-                        }}
-                        inputProps={{ "aria-label": color }}
-                      />
-                    ))}
-                  </>
-                )}
-              />
-            </Box>
-          </FormControl>
-
-          {userInfo && userInfo.isAdmin && (
-            <Box sx={{ mt: 2 }}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => {
-                  navigate(`/admin/edit-product/${product._id}`);
+  <FormControl component="fieldset">
+    <Box display="flex" flexWrap="wrap">
+      <Controller
+        name="selectedColor"
+        control={control}
+        defaultValue={state.selectedColor || ""}
+        render={({ field }) => (
+          <>
+            {colors.map((color, index) => (
+              <Radio
+                key={index}
+                {...field}
+                checked={field.value === color}
+                onChange={() => {
+                  handleColorAndImageChange(color);
+                  field.onChange(color);
                 }}
-                size="small"
-                sx={{ mr: 1 }}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={() => handleDelete(product._id)}
-                size="small"
-              >
-                Delete
-              </Button>
-            </Box>
-          )}
+                name={color}
+                sx={{
+                  backgroundColor: color,
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  marginRight: 2,
+                  border:
+                    field.value === color
+                      ? "2px solid #39ff14"
+                      : "none",
+                  "&:hover": {
+                    boxShadow: "0 0 5px rgba(0, 0, 0, 0.5)",
+                  },
+                  "&:focus-visible": {
+                    boxShadow: "0 0 10px #39ff14",
+                  },
+                }}
+                inputProps={{ "aria-label": color }}
+              />
+            ))}
+          </>
+        )}
+      />
+    </Box>
+  </FormControl>
 
-          <Box display="flex" justifyContent="space-between" sx={{ mt: 2 }}>
-            <Button
-              variant="contained"
-              color="secondary"
-              type="submit"
-              size="small"
-              sx={{
-                backgroundColor: "#4a4a4a",
-                color: "#fff",
-                fontWeight: "bold",
-                padding: "8px 16px",
-                "&:hover": {
-                  backgroundColor: "#66068bac",
-                },
-                mr: 2,
-              }}
-              disabled={
-                !state.selectedSize || !state.selectedColor || isLoading
-              }
-            >
-              {isLoading ? "Adding to Cart..." : "Add to Cart"}
-              {error && <Typography color="error">{error}</Typography>}
-            </Button>
+  <Typography
+    variant="body2"
+    color="text.secondary"
+    sx={{ fontWeight: "bold", marginTop: "8px" }}
+  >
+    Quantity:
+  </Typography>
 
-            <Button
-              variant="contained"
-              color="secondary"
-              component={Link}
-              to={`/product/${product._id}`}
-              state={{ product }}
-              size="small"
-              sx={{
-                backgroundColor: "#4a4a4a",
-                color: "#fff",
-                fontWeight: "bold",
-                padding: "8px 16px",
-                "&:hover": {
-                  backgroundColor: "#66068bac",
-                },
-              }}
-            >
-              View Details
-            </Button>
-          </Box>
-        </form>
-      </CardContent>
-    </Card>
-  );
+  <Controller
+    name="quantity"
+    control={control}
+    defaultValue={1}
+    render={({ field }) => (
+      <TextField
+        {...field}
+        type="number"
+        inputProps={{ min: 1 }}
+        onChange={(e) => {
+          const quantity = Math.max(1, Number(e.target.value));
+          field.onChange(quantity);
+        }}
+        sx={{
+          width: "100px",
+          fontSize: "0.8rem",
+          height: "30px",
+          marginBottom: "16px",
+        }}
+      />
+    )}
+  />
+
+  {userInfo && userInfo.isAdmin && (
+    <Box sx={{ mt: 2 }}>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => {
+          navigate(`/admin/edit-product/${product._id}`);
+        }}
+        size="small"
+        sx={{ mr: 1 }}
+      >
+        Edit
+      </Button>
+      <Button
+        variant="contained"
+        color="error"
+        onClick={() => handleDelete(product._id)}
+        size="small"
+      >
+        Delete
+      </Button>
+    </Box>
+  )}
+
+  <Box display="flex" justifyContent="space-between" sx={{ mt: 2 }}>
+    <Button
+      variant="contained"
+      color="secondary"
+      type="submit"
+      size="small"
+      sx={{
+        backgroundColor: "#4a4a4a",
+        color: "#fff",
+        fontWeight: "bold",
+        padding: "8px 16px",
+        "&:hover": {
+          backgroundColor: "#66068bac",
+        },
+        mr: 2,
+      }}
+      disabled={
+        !state.selectedSize || !state.selectedColor || isAddingToCart
+      }
+    >
+     {isAddingToCart || isLoading ? "Processing..." : "Add to Cart"}
+      {error && <Typography color="error">{error}</Typography>}
+    </Button>
+
+    <Button
+      variant="contained"
+      color="secondary"
+      component={Link}
+      to={`/product/${product._id}`}
+      state={{ product }}
+      size="small"
+      sx={{
+        backgroundColor: "#4a4a4a",
+        color: "#fff",
+        fontWeight: "bold",
+        padding: "8px 16px",
+        "&:hover": {
+          backgroundColor: "#66068bac",
+        },
+      }}
+    >
+      View Details
+    </Button>
+  </Box>
+</form>
+</CardContent>
+</Card>
+);
 };
 
 export default ProductCard;

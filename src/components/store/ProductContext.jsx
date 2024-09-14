@@ -19,6 +19,7 @@ const ProductProvider = ({ children }) => {
   const [state, dispatch] = useReducer(productReducer, productInitialState);
   const [error, setError] = useState(null);
 
+  // تابع مدیریت خطا
   const handleError = useCallback((error, customMessage = "") => {
     console.error(`${customMessage} Error:`, error);
     const errorMessage =
@@ -28,6 +29,7 @@ const ProductProvider = ({ children }) => {
     setError(errorMessage);
   }, []);
 
+  // تابع برای دریافت لیست محصولات
   const fetchProducts = useCallback(async () => {
     try {
       await fetchProductsAction(dispatch, handleError);
@@ -36,39 +38,34 @@ const ProductProvider = ({ children }) => {
     }
   }, [dispatch, handleError]);
 
+  // تابع برای اضافه کردن محصول
   const addProduct = useCallback(
     async (product) => {
       try {
-        await addProductAction(dispatch, handleError, product, fetchProducts);
+        await addProductAction(dispatch, handleError, product);
       } catch (err) {
         handleError(err, "Adding product failed.");
       }
     },
-    [dispatch, handleError, fetchProducts]
+    [dispatch, handleError]
   );
 
+  // تابع برای به‌روزرسانی محصول
   const updateProduct = useCallback(
     async (id, product) => {
       try {
-        console.log("Updating product:", { id, product });
-        await updateProductAction(
-          dispatch,
-          handleError,
-          id,
-          product,
-          fetchProducts
-        );
+        await updateProductAction(dispatch, handleError, id, product);
       } catch (err) {
         handleError(err, "Updating product failed.");
       }
     },
-    [dispatch, handleError, fetchProducts]
+    [dispatch, handleError]
   );
 
+  // تابع برای حذف محصول
   const deleteProduct = useCallback(
     async (id) => {
       try {
-        console.log("Deleting product with id:", id);
         await deleteProductAction(dispatch, handleError, id, fetchProducts);
       } catch (err) {
         handleError(err, "Deleting product failed.");
@@ -77,6 +74,7 @@ const ProductProvider = ({ children }) => {
     [dispatch, handleError, fetchProducts]
   );
 
+  // نظارت بر تغییرات محصولات
   useEffect(() => {
     console.log("Products in state:", state.productList.products);
   }, [state.productList.products]);

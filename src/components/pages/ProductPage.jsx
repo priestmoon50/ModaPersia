@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useMemo } from "react";
 import {
   Grid,
   Container,
@@ -8,23 +8,21 @@ import {
   Snackbar,
   Alert,
   TextField,
+  CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../store/UserContext";
 import { ProductContext } from "../store/ProductContext";
-import CartContext from "../store/CartContext";
 import ProductCard from "./ProductCard";
 import ProductFormDialog from "./ProductFormDialog";
 
 const ProductPage = () => {
   const { state: userContextState } = useContext(UserContext);
   const { state: productContextState, fetchProducts, updateProduct, deleteProduct, addProduct } = useContext(ProductContext);
-  const { addCartItem } = useContext(CartContext);
 
   const { userInfo } = userContextState?.userLogin || {};
   const { products = [], loading, error } = productContextState.productList || {};
 
-  // State برای دسته‌بندی و جستجو
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -40,22 +38,13 @@ const ProductPage = () => {
     fetchProducts();
   }, [fetchProducts]);
 
-  const handleAddToCart = async (item) => {
-    try {
-      await addCartItem(item);
-      handleSnackbarOpen("Product added to cart successfully");
-    } catch (error) {
-      console.error("Failed to add product to cart:", error);
-      handleSnackbarOpen("Failed to add product to cart", "error");
-    }
-  };
-
-  // فیلتر محصولات بر اساس دسته‌بندی و جستجو
-  const filteredProducts = products.filter(product => {
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => {
+      const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [products, selectedCategory, searchTerm]);
 
   const handleEdit = (product) => {
     setEditingProduct(product);
@@ -130,7 +119,7 @@ const ProductPage = () => {
   };
 
   if (loading) {
-    return <Typography variant="h5">Loading...</Typography>;
+    return <CircularProgress />;
   }
 
   if (error) {
@@ -147,7 +136,6 @@ const ProductPage = () => {
         Products
       </Typography>
 
-      {/* بخش جستجو و فیلتر */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <TextField
           label="Search Products"
@@ -227,8 +215,7 @@ const ProductPage = () => {
               product={product}
               handleEdit={handleEdit}
               handleDelete={handleDelete}
-              handleAddToCart={handleAddToCart}
-              userInfo={userInfo}
+              userInfo={userInfo} 
             />
           </Grid>
         ))}

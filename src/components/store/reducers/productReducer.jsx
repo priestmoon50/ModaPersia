@@ -54,15 +54,18 @@ const handleSuccess = (state, key, data) => ({
 });
 
 // Helper to handle fail state updates
-const handleFail = (state, key, error) => ({
-  ...state,
-  [key]: {
-    ...state[key],
-    loading: false,
-    success: false,
-    error,
-  },
-});
+const handleFail = (state, key, error) => {
+  console.error(`[${new Date().toISOString()}] Error in ${key}:`, error);
+  return {
+    ...state,
+    [key]: {
+      ...state[key],
+      loading: false,
+      success: false,
+      error,
+    },
+  };
+};
 
 const productReducer = (state = productInitialState, action) => {
   switch (action.type) {
@@ -72,9 +75,9 @@ const productReducer = (state = productInitialState, action) => {
         productList: { ...state.productList, loading: true },
       };
     case PRODUCT_LIST_SUCCESS:
-      return handleSuccess(state, 'productList', { products: action.payload, error: null });
+      return handleSuccess(state, "productList", { products: action.payload, error: null });
     case PRODUCT_LIST_FAIL:
-      return handleFail(state, 'productList', action.payload);
+      return handleFail(state, "productList", action.payload);
 
     case PRODUCT_ADD_REQUEST:
       return {
@@ -83,14 +86,14 @@ const productReducer = (state = productInitialState, action) => {
       };
     case PRODUCT_ADD_SUCCESS:
       return {
-        ...handleSuccess(state, 'productAdd', { product: action.payload }),
+        ...handleSuccess(state, "productAdd", { product: action.payload }),
         productList: {
           ...state.productList,
           products: [...state.productList.products, action.payload],
         },
       };
     case PRODUCT_ADD_FAIL:
-      return handleFail(state, 'productAdd', action.payload);
+      return handleFail(state, "productAdd", action.payload);
 
     case PRODUCT_UPDATE_REQUEST:
       return {
@@ -99,14 +102,14 @@ const productReducer = (state = productInitialState, action) => {
       };
     case PRODUCT_UPDATE_SUCCESS:
       return {
-        ...handleSuccess(state, 'productUpdate', { product: action.payload }),
+        ...handleSuccess(state, "productUpdate", { product: action.payload }),
         productList: {
           ...state.productList,
           products: updateProductList(state.productList.products, action.payload),
         },
       };
     case PRODUCT_UPDATE_FAIL:
-      return handleFail(state, 'productUpdate', action.payload);
+      return handleFail(state, "productUpdate", action.payload);
 
     case PRODUCT_DELETE_REQUEST:
       return {
@@ -115,14 +118,14 @@ const productReducer = (state = productInitialState, action) => {
       };
     case PRODUCT_DELETE_SUCCESS:
       return {
-        ...handleSuccess(state, 'productDelete', { error: null }),
+        ...handleSuccess(state, "productDelete", { error: null }),
         productList: {
           ...state.productList,
           products: state.productList.products.filter((product) => product._id !== action.payload),
         },
       };
     case PRODUCT_DELETE_FAIL:
-      return handleFail(state, 'productDelete', action.payload);
+      return handleFail(state, "productDelete", action.payload);
 
     default:
       return state;

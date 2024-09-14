@@ -65,8 +65,7 @@ export const fetchProductsAction = async (dispatch, handleError) => {
     "Failed to fetch products"
   );
 };
-
-export const addProductAction = async (dispatch, handleError, product) => {
+export const addProductAction = async (dispatch, getState, handleError, product) => {
   await handleAction(
     dispatch,
     PRODUCT_ADD_REQUEST,
@@ -75,10 +74,13 @@ export const addProductAction = async (dispatch, handleError, product) => {
     async () => {
       const formData = createProductFormData(product);
       const addedProduct = await productService.createProduct(formData);
-      
-      // بازخوانی لیست محصولات پس از افزودن محصول جدید
-      await fetchProductsAction(dispatch, handleError);
-      
+
+      // دریافت state از getState
+      const { products } = getState().productList;
+
+      // اضافه کردن محصول جدید به صورت مستقیم به لیست محصولات
+      dispatch({ type: PRODUCT_LIST_SUCCESS, payload: [...products, addedProduct] });
+
       return addedProduct;
     },
     handleError,
@@ -86,7 +88,7 @@ export const addProductAction = async (dispatch, handleError, product) => {
   );
 };
 
-export const updateProductAction = async (dispatch, handleError, id, product) => {
+export const updateProductAction = async (dispatch, getState, handleError, id, product) => {
   await handleAction(
     dispatch,
     PRODUCT_UPDATE_REQUEST,
@@ -95,10 +97,16 @@ export const updateProductAction = async (dispatch, handleError, id, product) =>
     async () => {
       const formData = createProductFormData(product);
       const updatedProduct = await productService.updateProduct(id, formData);
-      
-      // بازخوانی لیست محصولات پس از به‌روزرسانی محصول
-      await fetchProductsAction(dispatch, handleError);
-      
+
+      // دریافت state از getState
+      const { products } = getState().productList;
+
+      // به‌روزرسانی محصول به‌صورت مستقیم در لیست محصولات
+      dispatch({ 
+        type: PRODUCT_LIST_SUCCESS,
+        payload: products.map(p => p._id === id ? updatedProduct : p)
+      });
+
       return updatedProduct;
     },
     handleError,
@@ -106,8 +114,7 @@ export const updateProductAction = async (dispatch, handleError, id, product) =>
   );
 };
 
-
-export const deleteProductAction = async (dispatch, handleError, id, fetchProducts) => {
+export const deleteProductAction = async (dispatch, getState, handleError, id) => {
   await handleAction(
     dispatch,
     PRODUCT_DELETE_REQUEST,
@@ -115,7 +122,16 @@ export const deleteProductAction = async (dispatch, handleError, id, fetchProduc
     PRODUCT_DELETE_FAIL,
     async () => {
       await productService.deleteProduct(id);
-      fetchProducts();
+
+      // دریافت state از getState
+      const { products } = getState().productList;
+
+      // حذف محصول از لیست محصولات به‌صورت محلی
+      dispatch({
+        type: PRODUCT_LIST_SUCCESS,
+        payload: products.filter(p => p._id !== id)
+      });
+
       return id;
     },
     handleError,

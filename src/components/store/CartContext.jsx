@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useEffect, useContext } from "react";
+import React, { createContext, useReducer, useEffect, useContext, useCallback } from "react";
 import { UserContext } from "./UserContext";
 import {
   addCartItem as addCartItemAction,
@@ -11,9 +11,10 @@ import {
   SET_ERROR,
   CLEAR_CART,
   LOAD_CART_FROM_STORAGE,
-  CART_LOADING, // Add CART_LOADING action
+  CART_LOADING,
+  CART_LOADING_END,
 } from "./constants/cartConstants";
-import { cartReducer } from './reducers/cartReducer'; 
+import { cartReducer } from './reducers/cartReducer';
 
 const CartContext = createContext();
 
@@ -21,6 +22,7 @@ const initialState = {
   cartItems: [],
   error: null,
   isLoading: false,
+  success: false,
 };
 
 export const CartProvider = ({ children }) => {
@@ -33,81 +35,79 @@ export const CartProvider = ({ children }) => {
     dispatch({ type: LOAD_CART_FROM_STORAGE, payload: savedCart });
   }, []);
 
-  // Save cart to localStorage whenever cartItems change with debounce
-  useEffect(() => {
-    const saveToLocalStorage = () => {
-      try {
-        localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
-      } catch (error) {
-        dispatch({ type: SET_ERROR, payload: "Failed to save cart in localStorage" });
-      }
-    };
-    const debounceSave = setTimeout(saveToLocalStorage, 500); // debounce to limit the number of saves
-    return () => clearTimeout(debounceSave);
-  }, [state.cartItems]);
-
   // Add item to cart
-  const addCartItem = async (item) => {
-    dispatch({ type: CART_LOADING, payload: true });
+  const addCartItem = useCallback(async (item) => {
+    dispatch({ type: CART_LOADING });
+
     if (!item.productId || !item.name || !item.price) {
       dispatch({ type: SET_ERROR, payload: "Invalid product details" });
-      dispatch({ type: CART_LOADING, payload: false });
+      dispatch({ type: CART_LOADING_END });
       return;
     }
 
+    // Add item to local state
     dispatch({ type: ADD_TO_CART, payload: item });
 
-    if (userState.userLogin.userInfo?.token) {
+    // Sync with server if online and logged in
+    if (userState.userLogin.userInfo?.token && navigator.onLine) {
       try {
         await addCartItemAction(dispatch, item, userState.userLogin.userInfo.token);
+        dispatch({ type: CART_LOADING_END });
       } catch (error) {
-        console.error("Error syncing cart with server:", error);
         dispatch({ type: SET_ERROR, payload: "Failed to sync cart with server" });
       } finally {
-        dispatch({ type: CART_LOADING, payload: false });
+        dispatch({ type: CART_LOADING_END });
       }
+    } else if (!navigator.onLine) {
+      dispatch({ type: SET_ERROR, payload: "You are offline. Cart will sync when you reconnect." });
     } else {
-      dispatch({ type: CART_LOADING, payload: false });
+      dispatch({ type: CART_LOADING_END });
     }
-  };
+  }, [dispatch, userState.userLogin.userInfo]);
 
   // Remove item from cart
-  const removeCartItem = async (item) => {
-    dispatch({ type: CART_LOADING, payload: true });
+  const removeCartItem = useCallback(async (item) => {
+    dispatch({ type: CART_LOADING });
     dispatch({ type: REMOVE_FROM_CART, payload: item });
 
-    if (userState.userLogin.userInfo?.token) {
+    // Sync with server if online and logged in
+    if (userState.userLogin.userInfo?.token && navigator.onLine) {
       try {
         await removeCartItemAction(dispatch, item, userState.userLogin.userInfo.token);
+        dispatch({ type: CART_LOADING_END });
       } catch (error) {
-        console.error("Error removing item from cart on server:", error);
         dispatch({ type: SET_ERROR, payload: "Failed to remove item from server" });
       } finally {
-        dispatch({ type: CART_LOADING, payload: false });
+        dispatch({ type: CART_LOADING_END });
       }
+    } else if (!navigator.onLine) {
+      dispatch({ type: SET_ERROR, payload: "You are offline. Cart changes will sync when you reconnect." });
     } else {
-      dispatch({ type: CART_LOADING, payload: false });
+      dispatch({ type: CART_LOADING_END });
     }
-  };
+  }, [dispatch, userState.userLogin.userInfo]);
 
   // Clear cart
-  const clearCart = async () => {
-    dispatch({ type: CART_LOADING, payload: true });
+  const clearCart = useCallback(async () => {
+    dispatch({ type: CART_LOADING });
     dispatch({ type: CLEAR_CART });
 
-    if (userState.userLogin.userInfo?.token) {
+    // Sync with server if online and logged in
+    if (userState.userLogin.userInfo?.token && navigator.onLine) {
       try {
         await clearCartAction(dispatch, userState.userLogin.userInfo.token);
+        dispatch({ type: CART_LOADING_END });
       } catch (error) {
-        console.error("Error clearing cart on server:", error);
         dispatch({ type: SET_ERROR, payload: "Failed to clear cart on server" });
       } finally {
-        dispatch({ type: CART_LOADING, payload: false });
+        dispatch({ type: CART_LOADING_END });
       }
+    } else if (!navigator.onLine) {
+      dispatch({ type: SET_ERROR, payload: "You are offline. Cart will clear on server when you reconnect." });
     } else {
-      dispatch({ type: CART_LOADING, payload: false });
+      dispatch({ type: CART_LOADING_END });
     }
-  };
+  }, [dispatch, userState.userLogin.userInfo]);
 
   return (
     <CartContext.Provider
@@ -115,6 +115,7 @@ export const CartProvider = ({ children }) => {
         cartItems: state.cartItems,
         error: state.error,
         isLoading: state.isLoading,
+        success: state.success,
         addCartItem,
         removeCartItem,
         clearCart,
